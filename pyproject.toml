@@ -1,0 +1,18 @@
+[project]
+name = "court_classyfication"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
+]
+dependencies = [
+    "requests==2.32.*",
+    "BeautifulSoup4==4.12.*",
+]
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false

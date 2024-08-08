@@ -1,0 +1,7 @@
+{
+    "department": "03",
+    "start_date": "2019-01-01",
+    "end_date": "2023-12-31",
+    "order_by": "datapublikacji",
+    "ordering": "descending"
+}
