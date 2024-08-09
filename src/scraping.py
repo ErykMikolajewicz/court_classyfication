@@ -1,4 +1,5 @@
 import json
+from time import sleep
 
 import requests
 from bs4 import BeautifulSoup
@@ -70,6 +71,7 @@ def get_and_parse_html(url: str):
         'Referer': 'https://duckduckgo.com/',
     }
     response = requests.get(url, headers=headers)
+    sleep(0.98)
 
     text = response.text
     parsed_html = BeautifulSoup(text, 'html.parser')
