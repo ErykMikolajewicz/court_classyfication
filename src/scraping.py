@@ -35,7 +35,6 @@ def get_links_from_page(url: str):
     parsed_html = get_and_parse_html(url)
 
     nodes_with_links = parsed_html.find_all(lambda tag: tag.name == 'a' and tag.parent.name == 'h4')
-
     links = [node['href'] for node in nodes_with_links]
 
     return links
@@ -55,10 +54,15 @@ def save_case_details(case_html, case_identifier: str):
         content_header = part.find('h2').get_text()
         if content_header == 'UZASADNIENIE':
             justification_part = part
+            break
+
+    justification_elements = justification_part.find_all('p', recursive=False)
+
+    justification_text = '\n'.join(element.text for element in justification_elements)
 
     path = "./data/raw/" + case_identifier
     with open(path, 'w') as file:
-        file.write(str(justification_part))
+        file.write(justification_text)
 
 
 def get_and_parse_html(url: str):

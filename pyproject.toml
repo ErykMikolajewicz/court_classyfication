@@ -1,6 +1,6 @@
 [project]
 name = "court_classyfication"
-version = "0.2.0"
+version = "0.3.0"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
@@ -8,6 +8,7 @@ authors = [
 dependencies = [
     "requests==2.32.*",
     "BeautifulSoup4==4.12.*",
+    "pystempel==2.0.*",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
