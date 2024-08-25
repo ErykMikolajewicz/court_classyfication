@@ -2,6 +2,7 @@ from queue import Queue
 from threading import Thread
 
 import src.scraping as scraping
+from src.exceptions import NoJustificationPart
 
 
 def main():
@@ -41,8 +42,12 @@ def html_saving_loop(queue: Queue):
             break
         case_html = task_data[0]
         case_identifier = task_data[1]
-        scraping.save_case_details(case_html, case_identifier)
-        queue.task_done()
+        try:
+            scraping.save_case_details(case_html, case_identifier)
+        except NoJustificationPart:
+            print(case_identifier)
+        finally:
+            queue.task_done()
 
 
 main()

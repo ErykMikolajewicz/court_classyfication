@@ -4,6 +4,8 @@ from time import sleep
 import requests
 from bs4 import BeautifulSoup
 
+from src.exceptions import NoJustificationPart
+
 
 def configure():
     url_base = "https://orzeczenia.wroclaw-srodmiescie.sr.gov.pl/search/advanced/"
@@ -27,8 +29,8 @@ def get_pages_number(url: str):
     # I expected t in t-data-grid-pager mean top, but they are 2 objects with that class in html.
     pages_html = parsed_html.find('div', {'class': 't-data-grid-pager'}).find_all('a')
 
-    # No link to first page, so + 1.
-    return len(pages_html) + 1
+    last_page_number = pages_html[-1].text
+    return int(last_page_number)
 
 
 def get_links_from_page(url: str):
@@ -55,6 +57,9 @@ def save_case_details(case_html, case_identifier: str):
         if content_header == 'UZASADNIENIE':
             justification_part = part
             break
+
+    if justification_part is None:
+        raise NoJustificationPart()
 
     justification_elements = justification_part.find_all('p', recursive=False)
 
