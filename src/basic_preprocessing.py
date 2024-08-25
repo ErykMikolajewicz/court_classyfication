@@ -1,6 +1,6 @@
 import re
 
-from src.stopwords import stopwords
+import src.stopwords as stopwords
 
 roman_numerals = re.compile(r'\s+m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})\s+')
 
@@ -17,5 +17,9 @@ def regex_preprocessing(text):
     return text
 
 
-def remove_stop_words(words_list):
-    return [word for word in words_list if word not in stopwords]
+def remove_stopwords_before_stemming(words_list):
+    return [word for word in words_list if word not in stopwords.before_stemming]
+
+
+def remove_stopwords_after_stemming(words_list):
+    return [word for word in words_list if word not in stopwords.after_stemming]
