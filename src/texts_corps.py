@@ -19,20 +19,19 @@ def _get_counter_object(counter_path: Path) -> Counter:
 def get_vocabulary(fraction: float = 0.8) -> dict:
     number_to_make_vocabulary = int(counters_number * fraction)
 
-    random.seed(42)  # Actually not working as excepted, random.sample have bug
+    random.seed(42)
     selected_counters_paths = random.sample(counters_paths, k=number_to_make_vocabulary)
 
-    vocabulary = set()
+    vocabulary = {}
     for counter_path in selected_counters_paths:
         counter = _get_counter_object(counter_path)
-        case_words = counter.keys()
+        case_words = {word: None for word in counter.keys()}
         vocabulary.update(case_words)
 
-    vocabulary_with_numbers = {}
-    for n, word in enumerate(vocabulary, start=1):  # 0 reserved for unknown words
-        vocabulary_with_numbers[word] = n
+    for n, word in enumerate(vocabulary.keys(), start=1):  # 0 reserved for unknown words
+        vocabulary[word] = n
 
-    return vocabulary_with_numbers
+    return vocabulary
 
 
 def get_cases_words_count() -> Counter:
