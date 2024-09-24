@@ -1,7 +1,10 @@
 {
-    "department": "03",
+    "url_authority": "orzeczenia.gdansk-poludnie.sr.gov.pl",
+    "court_number": "15101505",
+    "department": "21",
     "start_date": "2013-01-01",
     "end_date": "2023-12-31",
     "order_by": "datapublikacji",
-    "ordering": "descending"
+    "ordering": "descending",
+    "destined_set": "validation"
 }

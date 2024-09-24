@@ -1,30 +1,31 @@
 import json
 from time import sleep
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 
 from src.exceptions import NoJustificationPart
 
+config_path = Path('config/scraping.json')
+with open(config_path) as config_file:
+    config = json.load(config_file)
 
-def configure():
-    url_base = "https://orzeczenia.wroclaw-srodmiescie.sr.gov.pl/search/advanced/"
+url_authority = config['url_authority']
+court_number = config['court_number']
+department = config['department']
+start_date = config['start_date']
+end_date = config['end_date']
+order_by = config['order_by']
+ordering = config['ordering']
+destined_set = config['destined_set']
 
-    with open("./config/scraping.json") as file:
-        config = json.load(file)
-
-    department = config['department']
-    start_date = config['start_date']
-    end_date = config['end_date']
-    order_by = config['order_by']
-    ordering = config['ordering']
-
-    return (f"{url_base}$N/$N/15502550/{department}/$N/$N/$N/{start_date}/{end_date}/"
-            f"$N/$N/$N/$N/$N/$N/{order_by}/{ordering}/")
+search_url = (f'https://{url_authority}/search/advanced/$N/$N/{court_number}/{department}/$N/$N/$N/'
+              f'{start_date}/{end_date}/$N/$N/$N/$N/$N/$N/{order_by}/{ordering}/')
 
 
-def get_pages_number(url: str):
-    parsed_html = get_and_parse_html(url)
+def get_pages_number():
+    parsed_html = get_and_parse_html(search_url)
 
     # I expected t in t-data-grid-pager mean top, but they are 2 objects with that class in html.
     pages_html = parsed_html.find('div', {'class': 't-data-grid-pager'}).find_all('a')
@@ -33,8 +34,8 @@ def get_pages_number(url: str):
     return int(last_page_number)
 
 
-def get_links_from_page(url: str):
-    parsed_html = get_and_parse_html(url)
+def get_links_from_page(page_number: int):
+    parsed_html = get_and_parse_html(search_url + str(page_number))
 
     nodes_with_links = parsed_html.find_all(lambda tag: tag.name == 'a' and tag.parent.name == 'h4')
     links = [node['href'] for node in nodes_with_links]
@@ -42,8 +43,9 @@ def get_links_from_page(url: str):
     return links
 
 
-def get_case(url: str):
-    case_html = get_and_parse_html(url)
+def get_case(case_part_link: str):
+    case_content_link = 'https://' + url_authority + case_part_link.replace("details", "content")
+    case_html = get_and_parse_html(case_content_link)
     return case_html
 
 
@@ -62,17 +64,16 @@ def save_case_details(case_html, case_identifier: str):
         raise NoJustificationPart()
 
     justification_elements = justification_part.find_all('p', recursive=False)
-
     justification_text = '\n'.join(element.text for element in justification_elements)
 
-    path = "./data/raw/" + case_identifier
-    with open(path, 'w') as file:
-        file.write(justification_text)
+    raw_case_storing = Path('data') / destined_set / 'raw' / case_identifier
+    with open(raw_case_storing, 'w') as raw_case_file:
+        raw_case_file.write(justification_text)
 
 
 def get_and_parse_html(url: str):
     headers = {
-        'Host': 'orzeczenia.wroclaw-srodmiescie.sr.gov.pl',
+        'Host': url_authority,
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;'
                   'q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8',

@@ -1,14 +1,18 @@
 from queue import Queue
 from threading import Thread
+import json
+from pathlib import Path
 
 import src.scraping as scraping
 from src.exceptions import NoJustificationPart
 
+config_path = Path('config/scraping.json')
+with open(config_path) as config_file:
+    config = json.load(config_file)
+
 
 def main():
-    base_url = scraping.configure()
-
-    page_numbers = scraping.get_pages_number(base_url)
+    page_numbers = scraping.get_pages_number()
 
     saving_queue = Queue()
 
@@ -16,16 +20,15 @@ def main():
     saving_task.start()
 
     for page_number in range(1, page_numbers):
-        page_url = base_url + str(page_number)
-        cases_links = scraping.get_links_from_page(page_url)
+        print(page_number, '/', page_numbers)
+        case_part_links = scraping.get_links_from_page(page_number)
 
-        for case_link in cases_links:
-            case_content_link = case_link.replace("details", "content")
-            url = "http://orzeczenia.wroclaw-srodmiescie.sr.gov.pl/" + case_content_link
+        for case_part_link in case_part_links:
+            case_html = scraping.get_case(case_part_link)
 
-            case_html = scraping.get_case(url)
-            last_slash_index = case_content_link.rfind('/')
-            case_identifier = case_content_link[last_slash_index:]
+            last_slash_index = case_part_link.rfind('/')
+            case_identifier = case_part_link[last_slash_index + 1:]
+
             task_data = (case_html, case_identifier)
             saving_queue.put(task_data)
 

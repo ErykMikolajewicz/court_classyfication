@@ -162,6 +162,9 @@ cython_debug/
 .idea/
 
 #custom
-data/raw/
-data/preprocessed/
-data/counters/
+data/training/raw/
+data/training/preprocessed/
+data/training/counters/
+data/validation/raw/
+data/validation/preprocessed/
+data/validation/counters/
