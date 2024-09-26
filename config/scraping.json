@@ -1,10 +1,10 @@
 {
-    "url_authority": "orzeczenia.gdansk-poludnie.sr.gov.pl",
-    "court_number": "15101505",
-    "department": "21",
+    "url_authority": "orzeczenia.wroclaw-srodmiescie.sr.gov.pl",
+    "court_number": "15502550",
+    "department": "12",
     "start_date": "2013-01-01",
     "end_date": "2023-12-31",
     "order_by": "datapublikacji",
     "ordering": "descending",
-    "destined_set": "validation"
+    "destined_set": "training"
 }

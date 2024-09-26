@@ -56,7 +56,8 @@ def save_case_details(case_html, case_identifier: str):
     justification_part = None
     for part in content_parts:
         content_header = part.find('h2').get_text()
-        if content_header == 'UZASADNIENIE':
+        content_header = content_header.lower()
+        if content_header.find('uzasadnienie') != -1:
             justification_part = part
             break
 

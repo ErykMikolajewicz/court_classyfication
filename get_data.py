@@ -10,6 +10,8 @@ config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
+init_page = 1
+
 
 def main():
     page_numbers = scraping.get_pages_number()
@@ -19,7 +21,7 @@ def main():
     saving_task = Thread(target=html_saving_loop, args=(saving_queue,))
     saving_task.start()
 
-    for page_number in range(1, page_numbers):
+    for page_number in range(init_page, page_numbers + 1):
         print(page_number, '/', page_numbers)
         case_part_links = scraping.get_links_from_page(page_number)
 
