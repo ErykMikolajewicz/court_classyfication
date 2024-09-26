@@ -2,10 +2,10 @@ import re
 
 LABELS_REGEXES = {
     ".*_C_.*": "C",  # Cywilne pozew
-    ".*_Ns_.*": "Ns",  # Cywilne nieprocesowe
-    ".*_P_.*": "p",  # Prawo pracy
+    ".*_Ns_.*": "C",  # Cywilne nieprocesowe
+    ".*_P_.*": "P",  # Prawo pracy
     ".*_U_.*": "U",  # Ubezpieczenia społeczne
-    ".*_Co_.*": "Co",  # Inne cywilne
+    ".*Co_.*": "C",  # Inne cywilne
 }
 
 
