@@ -2,6 +2,7 @@ from queue import Queue
 from threading import Thread
 import json
 from pathlib import Path
+import argparse
 
 import src.scraping as scraping
 from src.exceptions import NoJustificationPart
@@ -10,7 +11,11 @@ config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
-init_page = 1
+parser = argparse.ArgumentParser()
+parser.add_argument("init_page", default=1, type=int, nargs='?')
+args = parser.parse_args()
+
+init_page = args.init_page
 
 
 def main():
