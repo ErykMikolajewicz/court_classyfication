@@ -3,9 +3,14 @@ from threading import Thread
 import json
 from pathlib import Path
 import argparse
+import logging
 
 import src.scraping as scraping
 from src.exceptions import NoJustificationPart
+
+logging.basicConfig()
+main_logger = logging.getLogger(__name__)
+main_logger.setLevel(logging.INFO)
 
 config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
@@ -27,7 +32,7 @@ def main():
     saving_task.start()
 
     for page_number in range(init_page, page_numbers + 1):
-        print(page_number, '/', page_numbers)
+        main_logger.info(f'Strona: {page_number}/{page_numbers}')
         case_part_links = scraping.get_links_from_page(page_number)
 
         for case_part_link in case_part_links:
@@ -55,7 +60,7 @@ def html_saving_loop(queue: Queue):
         try:
             scraping.save_case_details(case_html, case_identifier)
         except NoJustificationPart:
-            print(case_identifier)
+            main_logger.warning(case_identifier)
         finally:
             queue.task_done()
 
