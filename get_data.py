@@ -28,7 +28,7 @@ def main():
 
     saving_queue = Queue()
 
-    saving_task = Thread(target=html_saving_loop, args=(saving_queue,))
+    saving_task = Thread(target=html_saving_loop, args=(saving_queue,), daemon=True)
     saving_task.start()
 
     scraping_logger.debug('Started html saving loop - external info.')
