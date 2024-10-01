@@ -6,6 +6,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.exceptions import NoJustificationPart
+from src.loggers import scraping_logger
+
 
 config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
@@ -25,10 +27,13 @@ search_url = (f'https://{url_authority}/search/advanced/$N/$N/{court_number}/{de
 
 
 def get_pages_number():
+    scraping_logger.debug(f'Url to search: {search_url}')
+
     parsed_html = get_and_parse_html(search_url)
 
     # I expected t in t-data-grid-pager mean top, but they are 2 objects with that class in html.
     pages_html = parsed_html.find('div', {'class': 't-data-grid-pager'}).find_all('a')
+    scraping_logger.debug(f'Html with pages number: {pages_html}')
 
     last_page_number = pages_html[-1].text
     return int(last_page_number)
@@ -56,12 +61,16 @@ def save_case_details(case_html, case_identifier: str):
     justification_part = None
     for part in content_parts:
         content_header = part.find('h2').get_text()
+
+        scraping_logger.debug(f'Case part header: {content_header}')
+
         content_header = content_header.lower()
         if content_header.find('uzasadnienie') != -1:
             justification_part = part
             break
 
     if justification_part is None:
+        scraping_logger.debug(f'Case parts: {content_parts}')
         raise NoJustificationPart()
 
     justification_elements = justification_part.find_all('p', recursive=False)
@@ -82,6 +91,9 @@ def get_and_parse_html(url: str):
         'Referer': 'https://duckduckgo.com/',
     }
     response = requests.get(url, headers=headers)
+
+    scraping_logger.debug(f'{url} \n Status code: {response.status_code}')
+
     sleep(0.98)
 
     text = response.text

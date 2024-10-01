@@ -3,27 +3,27 @@ from threading import Thread
 import json
 from pathlib import Path
 import argparse
-import logging
 
 import src.scraping as scraping
 from src.exceptions import NoJustificationPart
+from src.loggers import scraping_logger, logging_levels
 
-logging.basicConfig()
-main_logger = logging.getLogger(__name__)
-main_logger.setLevel(logging.INFO)
+parser = argparse.ArgumentParser()
+parser.add_argument("init_page", default=1, type=int, nargs='?')
+parser.add_argument("--logging_level", default='INFO', nargs='?',
+                    choices=logging_levels)
+args = parser.parse_args()
+
+scraping_logger.setLevel(args.logging_level)
 
 config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("init_page", default=1, type=int, nargs='?')
-args = parser.parse_args()
-
-init_page = args.init_page
-
 
 def main():
+    scraping_logger.info('Started.')
+
     page_numbers = scraping.get_pages_number()
 
     saving_queue = Queue()
@@ -31,8 +31,10 @@ def main():
     saving_task = Thread(target=html_saving_loop, args=(saving_queue,))
     saving_task.start()
 
-    for page_number in range(init_page, page_numbers + 1):
-        main_logger.info(f'Strona: {page_number}/{page_numbers}')
+    scraping_logger.debug('Started html saving loop - external info.')
+
+    for page_number in range(args.init_page, page_numbers + 1):
+        scraping_logger.info(f'Strona: {page_number}/{page_numbers}')
         case_part_links = scraping.get_links_from_page(page_number)
 
         for case_part_link in case_part_links:
@@ -49,6 +51,8 @@ def main():
 
 
 def html_saving_loop(queue: Queue):
+    scraping_logger.debug('Started html saving loop - internal info.')
+
     while True:
         task_data = queue.get()
         if task_data is None:
@@ -57,10 +61,13 @@ def html_saving_loop(queue: Queue):
             break
         case_html = task_data[0]
         case_identifier = task_data[1]
+
+        scraping_logger.debug(case_identifier)
+
         try:
             scraping.save_case_details(case_html, case_identifier)
         except NoJustificationPart:
-            main_logger.warning(case_identifier)
+            scraping_logger.warning(case_identifier)
         finally:
             queue.task_done()
 
