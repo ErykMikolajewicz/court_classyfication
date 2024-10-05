@@ -1,11 +1,11 @@
 import re
 
 LABELS_REGEXES = {
-    ".*_C_.*": "C",  # Cywilne pozew
-    ".*_Ns_.*": "C",  # Cywilne nieprocesowe
-    ".*_P_.*": "P",  # Prawo pracy
-    ".*_U_.*": "U",  # Ubezpieczenia społeczne
-    ".*Co_.*": "C",  # Inne cywilne
+    ".*_C_.*": "Cywilne pozew",
+    ".*_Ns_.*": "Cywilne nieprocesowe",
+    ".*_P_.*": "Prawo pracy",
+    ".*_U_.*": "Ubezpieczenia społeczne",
+    ".*Co_.*": "Inne cywilne",
 }
 
 
@@ -15,4 +15,4 @@ def get_counter_label(counter_file_name: str) -> str:
         if regex_result is not None:
             return label
 
-    return "X"  # If any label don't match
+    return "Inne"  # If any label don't match

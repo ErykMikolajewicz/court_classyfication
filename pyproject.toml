@@ -1,6 +1,6 @@
 [project]
 name = "court_classyfication"
-version = "0.5.13"
+version = "0.5.14"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
