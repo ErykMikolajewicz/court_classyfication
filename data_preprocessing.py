@@ -37,7 +37,7 @@ def main():
 
         word_count = Counter(stemmed_words)
 
-        counter_storing_path = basic_preprocessing_path / 'counters' / file_path.name
+        counter_storing_path = basic_preprocessing_path / 'counters' / f'{file_path.name}.pickle'
         with open(counter_storing_path, 'wb') as storage_file:
             pickle.dump(word_count, storage_file)
 
