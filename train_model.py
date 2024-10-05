@@ -1,11 +1,14 @@
 from typing import Literal
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sn
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import GridSearchCV
 
 from src.texts_corps import get_vocabulary, get_cases_words_count, get_counters_number
 
@@ -18,9 +21,10 @@ def get_features(set_name: Literal['training', 'validation'], vocabulary: dict):
         for word, n in words_count.items():
             try:
                 column_index = vocabulary[word]
-                features[row_index, column_index] = n
             except KeyError:
                 features[row_index, 0] += n
+                continue
+            features[row_index, column_index] = n
     return features
 
 
@@ -37,14 +41,27 @@ def main():
 
     training_features: np.array = get_features('training', vocabulary)
     training_target = get_target('training')
+    labels = np.unique(training_target)
 
     encoder = OneHotEncoder()
     encoder.fit(training_target)
     training_target = encoder.transform(training_target)
 
-    clf = MLPClassifier(solver='lbfgs', alpha=1e-2, hidden_layer_sizes=(5, 500), random_state=42)
+    clf = MLPClassifier(random_state=42)
 
-    clf.fit(training_features, training_target)
+    grid_parameters = {'alpha': [0.001, 0.01, 0.1, 1, 10],
+                       'hidden_layer_sizes': [(10, 10), (10, 20), (10, 30), (20, 20), (20, 10), (30, 10)]}
+    grid_search = GridSearchCV(clf, grid_parameters, cv=5, n_jobs=8)  # with 8 jobs use 30 Gb Ram on Linux
+    grid_search.fit(training_features, training_target)  # Very long computing ~ 7 hours with 8 cores
+
+    print(grid_search.best_params_)
+    print(grid_search.best_score_)
+
+    clf = MLPClassifier(random_state=42, alpha=0.1, hidden_layer_sizes=(20, 20))
+
+    trained_model = clf.fit(training_features, training_target)
+    with open('py_objects/sklearn_best_model.pickle', 'wb') as model_file:
+        pickle.dump(trained_model, model_file)
 
     validation_features = get_features('validation', vocabulary)
     validation_target = get_target('validation')
@@ -53,12 +70,11 @@ def main():
     validation_predict = clf.predict(validation_features)
     print(accuracy_score(validation_target, validation_predict))
 
-    cm = confusion_matrix(validation_target.toarray().argmax(axis=1), validation_predict.toarray().argmax(axis=1))
+    cm = confusion_matrix(validation_target.toarray().argmax(axis=1),
+                          validation_predict.toarray().argmax(axis=1))
 
-    # Plot the confusion matrix
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Cywilne", "Praca","Ubezpieczenia Społeczne",
-                                                                       "Inne"])
-    disp.plot(cmap=plt.cm.Blues)
+    sn.heatmap(cm, xticklabels=labels, yticklabels=labels, cmap="Reds", annot=True, cbar=False, fmt='n')
+    plt.xticks(rotation=30)
     plt.title('Confusion Matrix')
     plt.show()
 
