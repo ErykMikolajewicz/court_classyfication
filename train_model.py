@@ -57,7 +57,7 @@ def main():
     print(grid_search.best_params_)
     print(grid_search.best_score_)
 
-    clf = MLPClassifier(random_state=42, alpha=0.1, hidden_layer_sizes=(20, 20))
+    clf = MLPClassifier(random_state=42, **grid_search.best_params_)
 
     trained_model = clf.fit(training_features, training_target)
     with open('py_objects/sklearn_best_model.pickle', 'wb') as model_file:
