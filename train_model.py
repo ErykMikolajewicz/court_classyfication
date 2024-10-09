@@ -1,5 +1,6 @@
 from typing import Literal
 import pickle
+import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,11 +14,14 @@ from sklearn.model_selection import GridSearchCV
 from src.texts_corps import get_vocabulary, get_cases_words_count, get_counters_number
 
 
-def get_features(set_name: Literal['training', 'validation'], vocabulary: dict):
+def get_features_and_target(set_name: Literal['training', 'validation'], vocabulary: dict):
     vocabulary_length = len(vocabulary)
     counters_number = get_counters_number(set_name)
+
     features = np.zeros((counters_number, vocabulary_length + 1), dtype=np.int32)
+    target = np.empty((counters_number, 1), dtype=object)
     for row_index, (words_count, label) in enumerate(get_cases_words_count(set_name)):
+        target[row_index] = label
         for word, n in words_count.items():
             try:
                 column_index = vocabulary[word]
@@ -25,22 +29,13 @@ def get_features(set_name: Literal['training', 'validation'], vocabulary: dict):
                 features[row_index, 0] += n
                 continue
             features[row_index, column_index] = n
-    return features
-
-
-def get_target(set_name: Literal['training', 'validation']) -> np.array:
-    counters_number = get_counters_number(set_name)
-    target = np.empty((counters_number, 1), dtype=object)
-    for row_index, (_, label) in enumerate(get_cases_words_count(set_name)):
-        target[row_index] = label
-    return target
+    return features, target
 
 
 def main():
     vocabulary = get_vocabulary('training')
 
-    training_features: np.array = get_features('training', vocabulary)
-    training_target = get_target('training')
+    training_features, training_target = get_features_and_target('training', vocabulary)
     labels = np.unique(training_target)
 
     encoder = OneHotEncoder()
@@ -48,7 +43,7 @@ def main():
     training_target = encoder.transform(training_target)
 
     clf = MLPClassifier(random_state=42)
-
+    """
     grid_parameters = {'alpha': [0.001, 0.01, 0.1, 1, 10],
                        'hidden_layer_sizes': [(10, 10), (10, 20), (10, 30), (20, 20), (20, 10), (30, 10)]}
     grid_search = GridSearchCV(clf, grid_parameters, cv=5, n_jobs=8)  # with 8 jobs use 30 Gb Ram on Linux
@@ -56,15 +51,15 @@ def main():
 
     print(grid_search.best_params_)
     print(grid_search.best_score_)
+    """
 
-    clf = MLPClassifier(random_state=42, **grid_search.best_params_)
+    clf = MLPClassifier(random_state=42, **{'alpha': 0.1, 'hidden_layer_sizes': (20, 20)} ) #**grid_search.best_params_
 
     trained_model = clf.fit(training_features, training_target)
     with open('py_objects/sklearn_best_model.pickle', 'wb') as model_file:
         pickle.dump(trained_model, model_file)
 
-    validation_features = get_features('validation', vocabulary)
-    validation_target = get_target('validation')
+    validation_features, validation_target = get_features_and_target('validation', vocabulary)
     validation_target = encoder.transform(validation_target)
 
     validation_predict = clf.predict(validation_features)
@@ -78,5 +73,7 @@ def main():
     plt.title('Confusion Matrix')
     plt.show()
 
-
+t1 = datetime.datetime.now()
 main()
+t2 = datetime.datetime.now()
+print(t2-t1)
