@@ -1,6 +1,6 @@
 [project]
 name = "court_classyfication"
-version = "0.5.17"
+version = "0.6.0"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
@@ -12,6 +12,7 @@ dependencies = [
     "scikit-learn==1.5.*",
     "matplotlib==3.9.*",
     "seaborn==0.13.*",
+    "prefect==3.0.*",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"

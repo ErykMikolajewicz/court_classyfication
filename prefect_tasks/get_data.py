@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 import argparse
 
+from prefect import task
+
 import src.scraping as scraping
 from src.exceptions import NoJustificationPart
 from src.loggers import scraping_logger, logging_levels
@@ -16,12 +18,13 @@ args = parser.parse_args()
 
 scraping_logger.setLevel(args.logging_level)
 
-config_path = Path('config/scraping.json')
+config_path = Path('./config/scraping.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
 
-def main():
+@task
+def get_data():
     scraping_logger.info('Started.')
 
     page_numbers = scraping.get_pages_number()
@@ -70,6 +73,3 @@ def html_saving_loop(queue: Queue):
             scraping_logger.warning(case_identifier)
         finally:
             queue.task_done()
-
-
-main()

@@ -4,6 +4,7 @@ from collections import Counter
 import pickle
 
 from pystempel import Stemmer
+from prefect import task
 
 from src.basic_preprocessing import (regex_preprocessing, remove_stopwords_before_stemming,
                                      remove_stopwords_after_stemming)
@@ -15,7 +16,8 @@ with open(config_path) as config_file:
     config = json.load(config_file)
 
 
-def main():
+@task
+def make_word_counts():
     set_to_preprocess = config['set_to_preprocess']
     basic_preprocessing_path = Path('data') / set_to_preprocess
 
@@ -40,6 +42,3 @@ def main():
         counter_storing_path = basic_preprocessing_path / 'counters' / f'{file_path.name}.pickle'
         with open(counter_storing_path, 'wb') as storage_file:
             pickle.dump(word_count, storage_file)
-
-
-main()

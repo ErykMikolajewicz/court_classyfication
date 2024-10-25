@@ -1,7 +1,7 @@
 from typing import Literal
 import pickle
-import datetime
 
+from prefect import task
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
@@ -32,18 +32,19 @@ def get_features_and_target(set_name: Literal['training', 'validation'], vocabul
     return features, target
 
 
-def main():
+@task
+def train_model():
     vocabulary = get_vocabulary('training')
 
     training_features, training_target = get_features_and_target('training', vocabulary)
-    labels = np.unique(training_target)
 
     encoder = OneHotEncoder()
     encoder.fit(training_target)
     training_target = encoder.transform(training_target)
 
     clf = MLPClassifier(random_state=42)
-    """
+    return
+
     grid_parameters = {'alpha': [0.001, 0.01, 0.1, 1, 10],
                        'hidden_layer_sizes': [(10, 10), (10, 20), (10, 30), (20, 20), (20, 10), (30, 10)]}
     grid_search = GridSearchCV(clf, grid_parameters, cv=5, n_jobs=8)  # with 8 jobs use 30 Gb Ram on Linux
@@ -51,7 +52,6 @@ def main():
 
     print(grid_search.best_params_)
     print(grid_search.best_score_)
-    """
 
     clf = MLPClassifier(random_state=42, **{'alpha': 0.1, 'hidden_layer_sizes': (20, 20)} ) #**grid_search.best_params_
 
@@ -59,7 +59,18 @@ def main():
     with open('py_objects/sklearn_best_model.pickle', 'wb') as model_file:
         pickle.dump(trained_model, model_file)
 
+
+@task
+def validate_model():
+    vocabulary = get_vocabulary('training')
+
+    with open('py_objects/sklearn_best_model.pickle', 'rb') as model_file:
+        clf = pickle.load(model_file)
+
     validation_features, validation_target = get_features_and_target('validation', vocabulary)
+
+    encoder = OneHotEncoder()
+    encoder.fit(validation_target)
     validation_target = encoder.transform(validation_target)
 
     validation_predict = clf.predict(validation_features)
@@ -68,12 +79,8 @@ def main():
     cm = confusion_matrix(validation_target.toarray().argmax(axis=1),
                           validation_predict.toarray().argmax(axis=1))
 
+    labels = np.unique(validation_target)
     sn.heatmap(cm, xticklabels=labels, yticklabels=labels, cmap="Reds", annot=True, cbar=False, fmt='n')
     plt.xticks(rotation=30)
     plt.title('Confusion Matrix')
-    plt.show()
-
-t1 = datetime.datetime.now()
-main()
-t2 = datetime.datetime.now()
-print(t2-t1)
+    plt.savefig('charts/sklearn_validation_confusion_matrix.png')
