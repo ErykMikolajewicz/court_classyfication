@@ -1,29 +1,22 @@
-from queue import Queue
-from threading import Thread
 import json
 from pathlib import Path
 
 from prefect import task, get_run_logger
+from bs4 import BeautifulSoup
 
 import src.scraping as scraping
-from src.exceptions import NoJustificationPart
 
 
-config_path = Path('./config/scraping.json')
+config_path = Path('config/scraping.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
 
 @task
-def get_data(init_page=1):
+def get_raw_html(destined_set, init_page=1):
     prefect_logger = get_run_logger()
 
     page_numbers = scraping.get_pages_number()
-
-    saving_queue = Queue()
-
-    saving_task = Thread(target=html_saving_loop, args=(saving_queue,), daemon=True)
-    saving_task.start()
 
     prefect_logger.debug('Started html saving loop - external info.')
 
@@ -36,32 +29,46 @@ def get_data(init_page=1):
 
             last_slash_index = case_part_link.rfind('/')
             case_identifier = case_part_link[last_slash_index + 1:]
-
-            task_data = (case_html, case_identifier)
-            saving_queue.put(task_data)
-
-    saving_queue.join()
-    saving_queue.put('END')
+            case_path = Path('data') / destined_set / 'raw' / case_identifier
+            with open(case_path, 'w') as case_file:
+                case_file.write(case_html)
 
 
-def html_saving_loop(queue: Queue):
+@task
+def get_justification(dataset_type):
     prefect_logger = get_run_logger()
-    prefect_logger.debug('Started html saving loop - internal info.')
 
-    while True:
-        task_data = queue.get()
-        if task_data is None:
-            continue
-        elif task_data == 'END':
-            break
-        case_html = task_data[0]
-        case_identifier = task_data[1]
+    raw_html_path = Path('data') / dataset_type / 'raw'
+    for raw_case_path in raw_html_path.iterdir():
+        with open(raw_case_path, 'r') as raw_html_file:
+            case_html = raw_html_file.read()
+            case_identifier = raw_case_path.name
 
         prefect_logger.debug(case_identifier)
 
-        try:
-            scraping.save_case_details(case_html, case_identifier)
-        except NoJustificationPart:
+        case_html = BeautifulSoup(case_html, 'html.parser')
+        main_content = case_html.find('div', {'class': 'single_result'})
+        content_parts = main_content.find_all('div')
+
+        justification_part: BeautifulSoup | None = None
+        for part in content_parts:
+            content_header = part.find('h2').get_text()
+
+            prefect_logger.debug(f'Case part header: {content_header}')
+
+            content_header = content_header.lower()
+            if content_header.find('uzasadnienie') != -1:
+                justification_part = part
+                break
+
+        if justification_part is None:
+            prefect_logger.debug(f'Case parts: {content_parts}')
             prefect_logger.warning(case_identifier)
-        finally:
-            queue.task_done()
+
+        justification_elements = justification_part.find_all('p', recursive=False)
+        justification_text = '\n'.join(element.text for element in justification_elements)
+
+        raw_case_storing = Path('data') / dataset_type / 'justification' / case_identifier
+        with open(raw_case_storing, 'w') as raw_case_file:
+            raw_case_file.write(justification_text)
+

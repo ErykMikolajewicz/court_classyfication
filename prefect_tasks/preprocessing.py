@@ -9,19 +9,18 @@ from prefect import task
 from src.basic_preprocessing import (regex_preprocessing, remove_stopwords_before_stemming,
                                      remove_stopwords_after_stemming)
 
-stemmer = Stemmer.polimorf()
-
 config_path = Path('config/preprocessing.json')
 with open(config_path) as config_file:
     config = json.load(config_file)
 
 
 @task
-def make_word_counts():
-    set_to_preprocess = config['set_to_preprocess']
+def make_word_counts(set_to_preprocess):
+    stemmer = Stemmer.polimorf()
+
     basic_preprocessing_path = Path('data') / set_to_preprocess
 
-    raw_data_path = basic_preprocessing_path / 'raw'
+    raw_data_path = basic_preprocessing_path / 'justification'
     for file_path in raw_data_path.iterdir():
         text = file_path.read_text()
         text = text.lower()

@@ -162,9 +162,5 @@ cython_debug/
 .idea/
 
 #custom
-data/training/raw/
-data/training/preprocessed/
-data/training/counters/
-data/validation/raw/
-data/validation/preprocessed/
-data/validation/counters/
+data
+TODO.txt
