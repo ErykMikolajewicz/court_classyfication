@@ -43,7 +43,6 @@ def train_model():
     training_target = encoder.transform(training_target)
 
     clf = MLPClassifier(random_state=42)
-    return
 
     grid_parameters = {'alpha': [0.001, 0.01, 0.1, 1, 10],
                        'hidden_layer_sizes': [(10, 10), (10, 20), (10, 30), (20, 20), (20, 10), (30, 10)]}
@@ -53,7 +52,7 @@ def train_model():
     print(grid_search.best_params_)
     print(grid_search.best_score_)
 
-    clf = MLPClassifier(random_state=42, **{'alpha': 0.1, 'hidden_layer_sizes': (20, 20)} ) #**grid_search.best_params_
+    clf = MLPClassifier(random_state=42, **grid_search.best_params_)
 
     trained_model = clf.fit(training_features, training_target)
     with open('py_objects/sklearn_best_model.pickle', 'wb') as model_file:
