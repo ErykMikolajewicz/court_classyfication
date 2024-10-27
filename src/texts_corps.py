@@ -3,6 +3,7 @@ import pickle
 from pathlib import Path
 from collections import Counter
 from typing import Literal
+from collections import defaultdict
 
 from src.labeling import get_counter_label
 
@@ -13,7 +14,8 @@ def _get_counter_object(counter_path: Path) -> Counter:
     return counter
 
 
-def get_vocabulary(set_name: Literal['training', 'validation'], fraction: float = 0.8) -> dict:
+def get_vocabulary(set_name: Literal['training', 'validation'], fraction: float = 0.8,
+                   document_frequency_threshold: int = 5) -> dict:
     counters_dir = Path('data') / set_name / 'counters'
     counters_paths = [path for path in counters_dir.iterdir()]
     counters_number = len(counters_paths)
@@ -22,14 +24,18 @@ def get_vocabulary(set_name: Literal['training', 'validation'], fraction: float 
     random.seed(42)
     selected_counters_paths = random.sample(counters_paths, k=number_to_make_vocabulary)
 
-    vocabulary = {}
+    document_words_frequency_count = defaultdict(lambda: 0)
     for counter_path in selected_counters_paths:
         counter = _get_counter_object(counter_path)
-        case_words = {word: None for word in counter.keys()}
-        vocabulary.update(case_words)
+        for word in counter.keys():
+            document_words_frequency_count[word] += 1
 
-    for n, word in enumerate(vocabulary.keys(), start=1):  # 0 reserved for unknown words
-        vocabulary[word] = n
+    vocabulary = {}
+    n = 1  # 0 reserved for unknown words
+    for word, count in document_words_frequency_count.items():
+        if count > document_frequency_threshold:
+            vocabulary[word] = n
+            n += 1
 
     return vocabulary
 
@@ -49,4 +55,3 @@ def get_counters_number(set_name: Literal['training', 'validation']) -> int:
     counters_paths = [path for path in counters_dir.iterdir()]
     counters_number = len(counters_paths)
     return counters_number
-
