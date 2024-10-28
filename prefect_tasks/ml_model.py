@@ -4,6 +4,7 @@ import pickle
 from prefect import task
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 import seaborn as sn
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neural_network import MLPClassifier
@@ -68,6 +69,8 @@ def validate_model():
 
     validation_features, validation_target = get_features_and_target('validation', vocabulary)
 
+    labels = np.unique(validation_target)
+
     encoder = OneHotEncoder()
     encoder.fit(validation_target)
     validation_target = encoder.transform(validation_target)
@@ -77,9 +80,11 @@ def validate_model():
 
     cm = confusion_matrix(validation_target.toarray().argmax(axis=1),
                           validation_predict.toarray().argmax(axis=1))
+    plt.rcParams["pdf.use14corefonts"] = True
+    plt.rcParams["ps.useafm"] = True
 
-    labels = np.unique(validation_target)
     sn.heatmap(cm, xticklabels=labels, yticklabels=labels, cmap="Reds", annot=True, cbar=False, fmt='n')
-    plt.xticks(rotation=30)
+    plt.xticks(rotation=75)
     plt.title('Confusion Matrix')
-    plt.savefig('charts/sklearn_validation_confusion_matrix.png')
+    plt.tight_layout()
+    plt.savefig('charts/sklearn_validation_confusion_matrix.png', dpi=300)

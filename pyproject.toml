@@ -1,6 +1,6 @@
 [project]
 name = "court_classyfication"
-version = "0.6.2"
+version = "0.6.3"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
@@ -10,9 +10,8 @@ dependencies = [
     "BeautifulSoup4==4.12.*",
     "pystempel==2.0.*",
     "scikit-learn==1.5.*",
-    "matplotlib==3.9.*",
-    "seaborn==0.13.*",
     "prefect==3.0.*",
+    "seaborn==0.13.*",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
