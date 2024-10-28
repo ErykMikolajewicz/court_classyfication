@@ -46,8 +46,8 @@ def train_model():
 
     grid_parameters = {'alpha': [0.001, 0.01, 0.1, 1, 10],
                        'hidden_layer_sizes': [(10, 10), (10, 20), (10, 30), (20, 20), (20, 10), (30, 10)]}
-    grid_search = GridSearchCV(clf, grid_parameters, cv=5, n_jobs=4)  # with 4 jobs use 30 Gb Ram on Linux
-    grid_search.fit(training_features, training_target)  # Very long computing ~ 14 hours with 4 cores
+    grid_search = GridSearchCV(clf, grid_parameters, cv=5)
+    grid_search.fit(training_features, training_target)  # Very long computing ~ 1,5 hours with 8 cores
 
     print(grid_search.best_params_)
     print(grid_search.best_score_)
