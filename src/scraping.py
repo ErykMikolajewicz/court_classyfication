@@ -2,7 +2,7 @@ import json
 from time import sleep
 from pathlib import Path
 
-import requests
+import httpx
 from bs4 import BeautifulSoup
 from prefect import get_run_logger
 
@@ -66,7 +66,7 @@ def get_html(url: str) -> str:
         'Accept-Language': 'en-US,en;q=0.5',
         'Referer': 'https://duckduckgo.com/',
     }
-    response = requests.get(url, headers=headers)
+    response = httpx.get(url, headers=headers)
 
     prefect_logger.debug(f'{url} \n Status code: {response.status_code}')
 

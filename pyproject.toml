@@ -1,16 +1,16 @@
 [project]
 name = "court_classyfication"
-version = "0.6.3"
+version = "0.7.0"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
 ]
 dependencies = [
-    "requests==2.32.*",
+    "httpx==0.28.*",
     "BeautifulSoup4==4.12.*",
     "pystempel==2.0.*",
-    "scikit-learn==1.5.*",
-    "prefect==3.0.*",
+    "scikit-learn==1.6.*",
+    "prefect==3.1.*",
     "seaborn==0.13.*",
 ]
 requires-python = "==3.12.*"
