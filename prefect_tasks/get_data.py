@@ -1,74 +1,93 @@
-import json
+"""Functions to get raw case html from court site, and extract justification from them."""
 from pathlib import Path
+import re
 
 from prefect import task, get_run_logger
 from bs4 import BeautifulSoup
+from prefect.tasks import exponential_backoff
+from prefect.cache_policies import NO_CACHE
 
-import src.scraping as scraping
-
-
-config_path = Path('config/scraping.json')
-with open(config_path) as config_file:
-    config = json.load(config_file)
+from src.scraping import CourtScraper
 
 
-@task
-def get_raw_html(destined_set, init_page=1):
-    prefect_logger = get_run_logger()
+@task(retries=3, retry_delay_seconds=exponential_backoff(10), cache_policy=NO_CACHE)
+def get_raw_html_from_page(court_scraper: CourtScraper, court_type: str, appeal_name: str, court_name: str,
+                           page_number: int):
+    case_links = court_scraper.get_links_from_page(page_number)
 
-    page_numbers = scraping.get_pages_number()
+    for case_link in case_links:
+        last_slash_index = case_link.rfind('/')
+        case_identifier = case_link[last_slash_index + 1:]
 
-    prefect_logger.debug('Started html saving loop - external info.')
-
-    for page_number in range(init_page, page_numbers + 1):
-        prefect_logger.info(f'Strona: {page_number}/{page_numbers}')
-        case_part_links = scraping.get_links_from_page(page_number)
-
-        for case_part_link in case_part_links:
-            case_html = scraping.get_case(case_part_link)
-
-            last_slash_index = case_part_link.rfind('/')
-            case_identifier = case_part_link[last_slash_index + 1:]
-            case_path = Path('data') / destined_set / 'raw' / case_identifier
-            with open(case_path, 'w') as case_file:
+        case_html = court_scraper.get_case_html(case_identifier)
+        case_dir = Path('data') / 'raw' / court_type / appeal_name / court_name
+        case_path = case_dir / case_identifier
+        try:
+            with open(case_path, 'w', encoding='utf-8') as case_file:
+                case_file.write(case_html)
+        except FileNotFoundError:
+            case_dir.mkdir(parents=True)
+            with open(case_path, 'w', encoding='utf-8') as case_file:
                 case_file.write(case_html)
 
-
 @task
-def get_justification(dataset_type):
+def get_raw_html_from_court(court_config):
     prefect_logger = get_run_logger()
 
-    raw_html_path = Path('data') / dataset_type / 'raw'
+    court_type = court_config['type']
+    url = court_config['url']
+    appeal = court_config['appeal']
+    court_name = court_config['name']
+
+    court_scraper = CourtScraper(url)
+    pages_number = court_scraper.get_pages_number()
+    for page_number in range(1, pages_number + 1):
+        prefect_logger.info(f'Page: {page_number}/{pages_number}')
+        get_raw_html_from_page(court_scraper, court_type, appeal, court_name, page_number)
+
+
+@task
+def get_justification(court_type, appeal_name, court_name):
+    prefect_logger = get_run_logger()
+
+    raw_html_path = Path('data') / 'raw' / court_type / appeal_name / court_name
+    case_justification_dir = Path('data') / 'justification' / court_type / appeal_name / court_name
+
+    if not raw_html_path.exists(): # Occur when is no cases in court page, sometimes happen in regional courts
+        return None
+
+    justification_warning_counter = 0
     for raw_case_path in raw_html_path.iterdir():
-        with open(raw_case_path, 'r') as raw_html_file:
+
+        with open(raw_case_path, 'r', encoding='utf-8') as raw_html_file:
             case_html = raw_html_file.read()
-            case_identifier = raw_case_path.name
+        case_identifier = raw_case_path.name
 
         prefect_logger.debug(case_identifier)
 
-        case_html = BeautifulSoup(case_html, 'html.parser')
-        main_content = case_html.find('div', {'class': 'single_result'})
-        content_parts = main_content.find_all('div')
+        case_html = BeautifulSoup(case_html, 'lxml')
 
-        justification_part: BeautifulSoup | None = None
-        for part in content_parts:
-            content_header = part.find('h2').get_text()
-
-            prefect_logger.debug(f'Case part header: {content_header}')
-
-            content_header = content_header.lower()
-            if content_header.find('uzasadnienie') != -1:
-                justification_part = part
+        justification_text = ''
+        for tag in case_html.find_all('h2'):
+            if tag.text == 'UZASADNIENIE':
+                justification_text = '\n'.join(t.text for t in tag.find_next_siblings('p'))
+                if not justification_text:
+                    justification_text = '\n'.join(t.text for t in tag.find_all_next('p'))
                 break
 
-        if justification_part is None:
-            prefect_logger.debug(f'Case parts: {content_parts}')
-            prefect_logger.warning(case_identifier)
+        if not justification_text:
+            search_flag = re.search('.*UZASADNIENIE.*', justification_text, re.IGNORECASE)
+            if search_flag:
+                justification_warning_counter += 1
+                prefect_logger.warning(f'Lack of justification for case: {case_identifier}'
+                                       f' warning number: {justification_warning_counter}')
+            continue
 
-        justification_elements = justification_part.find_all('p', recursive=False)
-        justification_text = '\n'.join(element.text for element in justification_elements)
-
-        raw_case_storing = Path('data') / dataset_type / 'justification' / case_identifier
-        with open(raw_case_storing, 'w') as raw_case_file:
-            raw_case_file.write(justification_text)
-
+        case_justification_path = case_justification_dir / case_identifier
+        try:
+            with open(case_justification_path, 'w', encoding='utf-8') as raw_case_file:
+                raw_case_file.write(justification_text)
+        except FileNotFoundError:
+            case_justification_dir.mkdir(parents=True)
+            with open(case_justification_path, 'w', encoding='utf-8') as raw_case_file:
+                raw_case_file.write(justification_text)

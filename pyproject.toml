@@ -1,17 +1,24 @@
 [project]
 name = "court_classyfication"
-version = "0.7.1"
+version = "1.0.0"
 description = "Default template for PDM package"
 authors = [
     {name = "Eryk Mikolajewicz", email = "eryk.mikolajewicz@gmail.com"},
 ]
 dependencies = [
-    "httpx==0.28.*",
     "BeautifulSoup4==4.12.*",
     "pystempel==2.0.*",
     "scikit-learn==1.6.*",
-    "prefect==3.1.*",
+    "prefect[ray]==3.1.*",
     "seaborn==0.13.*",
+    "httpx[http2]==0.28.*",
+    "lxml==5.3.*",
+    "pyqt6==6.8.*",
+    "psutil==7.0.*",
+    "morfeusz2==1.99.*",
+    "spacy==3.8.*",
+    "python-dotenv==1.0.*",
+    "pip>=25.0.1",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
