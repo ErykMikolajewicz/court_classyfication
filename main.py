@@ -40,10 +40,10 @@ def scikit_tree(label_type: Literal["detailed", "general"]):
     validate_random_tree(label_type)
 
 
-if __name__ == "__main__a":
+if __name__ == "__main__":
     get_and_prepare_data('precinct')
     prepare_data('precinct')
-    explore_data('precint', 'general')
+    explore_data('precinct', 'general')
     scikit_bag_with_unknown('general')
     scikit_tf_idf('general')
     scikit_online('general')
