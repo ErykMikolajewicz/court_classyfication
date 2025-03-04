@@ -1,9 +1,12 @@
+from typing import Literal
+
 import numpy as np
 
 from src.texts_corps import get_cases_words_count, get_counters_number
 
 
-def get_bag_unknown(vocabulary: dict, set_type: str, max_size=None) -> (np.ndarray, np.ndarray):
+def get_bag_unknown(vocabulary: dict, set_type: str, label_type: Literal["detailed", "general"],
+                    max_size=None) -> (np.ndarray, np.ndarray):
     vocabulary_length = len(vocabulary)
     counters_number = get_counters_number(set_type)
 
@@ -14,7 +17,7 @@ def get_bag_unknown(vocabulary: dict, set_type: str, max_size=None) -> (np.ndarr
     features = np.zeros((data_length, vocabulary_length + 1), dtype=np.int32)
     target = np.empty((data_length, 1), dtype=object)
 
-    for row_index, (words_count, label) in enumerate(get_cases_words_count(set_type)):
+    for row_index, (words_count, label) in enumerate(get_cases_words_count(set_type, label_type)):
         if max_size:
             if row_index >= max_size:
                 break

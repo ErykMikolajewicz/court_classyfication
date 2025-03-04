@@ -1,19 +1,20 @@
 """Using LDA make plot for bag of word features."""
 from random import shuffle
+from typing import Literal
 
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import matplotlib.pyplot as plt
 
 from src.ml_preparing import get_bag_unknown
 from src.texts_corps import get_vocabulary
-from src.labeling import LABELS_REGEXES
+from src.labeling import get_labels
 
 
-def make_lda_plot(batch_size: int):
-    labels_names = LABELS_REGEXES.values()
+def make_lda_plot(batch_size: int, label_type: Literal["detailed", "general"]):
+    labels_names = get_labels(label_type)
 
     vocabulary = get_vocabulary()
-    words_counts, labels = get_bag_unknown(vocabulary, set_type='training', max_size=batch_size)
+    words_counts, labels = get_bag_unknown(vocabulary, 'training', label_type, max_size=batch_size)
     labels = labels.ravel()
 
     lda = LinearDiscriminantAnalysis(n_components=2)

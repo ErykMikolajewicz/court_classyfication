@@ -1,33 +1,48 @@
 import re
+from typing import Literal
+
 
 LABELS_REGEXES = {
-    ".*_C_.*": "Cywilne pozew",
-    ".*_Ca_.*": "Cywilne pozew apelacja w okręgowym",
-    ".*Co_.*": "Inne cywilne",
-    ".*_Cz_.*": "Cywilne zażalenie w okręgowym",
-    ".*_Ga_.*": "Gospodarcze apelacja w okręgowym",
-    ".*_GC_.*": "Gospodarcze inne",
-    ".*_Gz_.*": "Gospodarcze zażalenie w okręgowym",
-    ".*_K_.*": "Karne",
-    ".*_Ka_.*": "Karne apelacja w okręgowym",
-    ".*_Kz_.*": "Karne zażalenie w okręgowym",
-    ".*_Ko_.*": "Karne z urzędu",
-    ".*_Ns_.*": "Cywilne nieprocesowe",
-    ".*_P_.*": "Prawo pracy",
-    ".*_Pa_.*": "Prawo pracy apelacja w okręgowym",
-    ".*_Pz_.*": "Prawo pracy zażalenie w okręgowym",
-    ".*_S_.*": "Skargi",
-    ".*_U_.*": "Ubezpieczenia społeczne",
-    ".*_Ua_.*": "Ubezpieczenia społeczne apelacja w okręgowym",
-    ".*": "Inne"
-    #".*_Uz_.*": "Ubezpieczenia społeczne zażalenie w okręgowym"
+    ".*_C_.*": {"detailed": "Cywilne pozew", "general": "Cywilne"},
+    ".*_Ca_.*": {"detailed": "Cywilne pozew apelacja w okręgowym", "general": "Cywilne"},
+    ".*Co_.*": {"detailed": "Inne cywilne", "general": "Cywilne"},
+    ".*_Cz_.*": {"detailed": "Cywilne zażalenie w okręgowym", "general": "Cywilne"},
+    ".*_Ga_.*": {"detailed": "Gospodarcze apelacja w okręgowym", "general": "Gospodarcze"},
+    ".*_GC_.*": {"detailed": "Gospodarcze inne", "general": "Gospodarcze"},
+    ".*_Gz_.*": {"detailed": "Gospodarcze zażalenie w okręgowym", "general": "Gospodarcze"},
+    ".*_K_.*": {"detailed": "Karne", "general": "Karne"},
+    ".*_Ka_.*": {"detailed": "Karne apelacja w okręgowym", "general": "Karne"},
+    ".*_Ko_.*": {"detailed": "Karne z urzędu", "general": "Karne"},
+    ".*_Kop_.*": {"detailed": "Karne ze stosunków międzynarodowych", "general": "Karne"},
+    ".*_Kow_.*": {"detailed": "Karne kwestie więźniów", "general": "Karne"},
+    ".*_Kp_.*": {"detailed": "Karne przygotowawcze", "general": "Karne"},
+    ".*_Kz_.*": {"detailed": "Karne zażalenie w okręgowym", "general": "Karne"},
+    ".*_Kzw_*": {"detailed": "Karne wykonawcze zażalenie w okręgowym", "general": "Karne"},
+    ".*_Ns_.*": {"detailed": "Cywilne nieprocesowe", "general": "Cywilne"},
+    ".*_Nc_.*": {"detailed": "Cywilne nakazowe i upominawcze", "general": "Cywilne"},
+    ".*_P_.*": {"detailed": "Prawo pracy", "general": "Pracy"},
+    ".*_Pa_.*": {"detailed": "Prawo pracy apelacja w okręgowym", "general": "Pracy"},
+    ".*_Po_.*": {"detailed": "Prawo pracy inne", "general": "Pracy"},
+    ".*_Pz_.*": {"detailed": "Prawo pracy zażalenie w okręgowym", "general": "Pracy"},
+    ".*_S_.*": {"detailed": "Skargi", "general": "Skargi"},
+    ".*_U_.*": {"detailed": "Ubezpieczenia społeczne", "general": "Ubezpieczenia Społeczne"},
+    ".*_Uo_.*": {"detailed": "Ubezpieczenia społeczne inne", "general": "Ubezpieczenia Społeczne"},
+    ".*_Ua_.*": {"detailed": "Ubezpieczenia społeczne apelacja w okręgowym", "general": "Ubezpieczenia Społeczne"},
+    ".*_Uz_.*_Uz_.*": {"detailed": "Ubezpieczenia społeczne zażalenie w okręgowym",
+                       "general": "Ubezpieczenia Społeczne"},
+    ".*_Zs_.*": {"detailed": "Skarga postanowienie krajowej izby odwoławczej", "general": "Skargi"},
+    ".*": {"detailed": "Inne", "general": "Inne"}
 }
 
 
-def get_counter_label(counter_file_name: str) -> str:
+def get_counter_label(counter_file_name: str, label_type: Literal["detailed", "general"]) -> str:
     for regex, label in LABELS_REGEXES.items():
         regex_result = re.search(regex, counter_file_name)
         if regex_result is not None:
-            return label
+            return label[label_type]
     else: # to ide do not complain about invalid type hints
         raise  ValueError
+
+
+def get_labels(label_type: Literal["detailed", "general"]) -> list:
+    return list({label[label_type] for label in LABELS_REGEXES.values()})

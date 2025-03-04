@@ -4,18 +4,20 @@ import re
 from collections import Counter
 import pickle
 from itertools import chain
+from typing import Literal
 
 import matplotlib.pyplot as plt
 
 from src.labeling import LABELS_REGEXES
 
 
-def plot_classes_chart():
+def plot_classes_chart(court_type: str, label_type: Literal["detailed", "general"]):
     label_counter = Counter()
     general_world_counter = Counter()
+
+    counter_dir = Path('data') / 'counters' / court_type
+
     cases = []
-    court_type = 'precinct'
-    counter_dir = Path('../data') / 'counters' / court_type
     for appeal in counter_dir.iterdir():
         for court in appeal.iterdir():
             cases.append(court.iterdir())
@@ -27,12 +29,14 @@ def plot_classes_chart():
         general_world_counter.update(case_counter)
 
         for regex, label in LABELS_REGEXES.items():
+            label = label[label_type]
+            if regex == '.*':
+                print(counter_path)
             regex_result = re.search(regex, counter_path.name)
             if regex_result:
                 label_counter[label] += 1
                 break
-        else:
-            label_counter['Inne'] += 1
+
 
     print(f'Liczba słów: {len(general_world_counter)}')
 

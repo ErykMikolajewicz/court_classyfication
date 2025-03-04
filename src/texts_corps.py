@@ -3,6 +3,7 @@ import pickle
 from pathlib import Path
 from collections import Counter
 from types import SimpleNamespace
+from typing import Literal
 
 from src.labeling import get_counter_label
 
@@ -38,12 +39,12 @@ def get_vocabulary(fraction: float = 0.8, document_frequency_threshold: int = 5)
     return vocabulary
 
 
-def get_cases_words_count(set_type: str) -> (Counter, str):
+def get_cases_words_count(set_type: str, label_type: Literal["detailed", "general"]) -> (Counter, str):
     counter_dir = Path('data') / 'counters' / set_type
     for counter_path in counter_dir.iterdir():
         counter = _get_counter_object(counter_path)
         counter_file_name = counter_path.name
-        label = get_counter_label(counter_file_name)
+        label = get_counter_label(counter_file_name, label_type)
         yield counter, label
 
 
