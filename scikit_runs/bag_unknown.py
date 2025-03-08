@@ -5,6 +5,8 @@ from typing import Literal
 
 import matplotlib.pyplot as plt
 import seaborn as sn
+from scipy import sparse
+import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
@@ -19,10 +21,11 @@ from src.labeling import get_labels
 def train_bag_with_unknown(label_type: Literal["detailed", "general"]):
     vocabulary = get_vocabulary()
 
-    training_features, training_target = get_bag_unknown(vocabulary, 'training', label_type, max_size=1_000)
+    training_features, training_target = get_bag_unknown(vocabulary, 'training', label_type)
+    training_features = sparse.csr_matrix(training_features, dtype=np.int32)
 
     labels = get_labels(label_type)
-    encoder = OneHotEncoder(categories=[labels])
+    encoder = OneHotEncoder(categories=[labels], dtype=np.int32)
     training_target = encoder.fit_transform(training_target)
 
     clf = MLPClassifier(random_state=42)
@@ -47,9 +50,10 @@ def validate_bag_with_unknown(label_type: Literal["detailed", "general"]):
     vocabulary = get_vocabulary()
 
     validation_features, validation_target = get_bag_unknown(vocabulary, 'validation', label_type)
+    validation_features = sparse.csr_matrix(validation_features, dtype=np.int32)
 
     labels = get_labels(label_type)
-    encoder = OneHotEncoder(categories=[labels])
+    encoder = OneHotEncoder(categories=[labels], dtype=np.int32)
     validation_target = encoder.fit_transform(validation_target)
 
     with open('py_objects/sklearn_model.pickle', 'rb') as model_file:
