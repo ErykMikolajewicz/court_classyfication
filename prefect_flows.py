@@ -7,6 +7,7 @@ from prefect_ray import RayTaskRunner
 from prefect_tasks.get_data import get_raw_html_from_court, get_justification
 from prefect_tasks.preprocessing import make_word_counts
 from prefect_tasks.moving import move_counters
+from prefect_tasks.tokening import create_tokens
 
 
 @flow(task_runner=ThreadPoolTaskRunner(max_workers=10))
@@ -23,7 +24,7 @@ def get_all_raw_html(court_type):
     get_raw_html_from_court.map(courts_one_type).wait()
 
 
-@flow(task_runner=RayTaskRunner()) # init_kwargs={'num_cpus': 1}
+@flow(task_runner=RayTaskRunner())
 def prepare_data(court_type: str):
     with open('./config/courts.json') as config_file:
         courts_list = config_file.read()
@@ -53,3 +54,22 @@ def prepare_data(court_type: str):
         word_count.wait()
 
     move_counters(court_type, 0.8)
+
+
+@flow(task_runner=RayTaskRunner())
+def prepare_tokens(court_type: str):
+    with open('./config/courts.json') as config_file:
+        courts_list = config_file.read()
+    courts_list = json.loads(courts_list)
+
+    courts_one_type = courts_list[court_type]
+    preparations = []
+    for court in courts_one_type:
+        appeal = court['appeal']
+        court_name = court['name']
+
+        preparation = create_tokens.submit(court_type, appeal, court_name, 0.8)
+        preparations.append(preparation)
+
+    for preparation in preparations:
+        preparation.wait()

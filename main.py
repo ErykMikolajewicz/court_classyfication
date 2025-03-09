@@ -2,7 +2,7 @@
 from dotenv import load_dotenv; load_dotenv()
 from typing import Literal
 
-from prefect_flows import get_all_raw_html, prepare_data
+from prefect_flows import get_all_raw_html, prepare_data, prepare_tokens
 from data_exploration.classes_counting import plot_classes_chart
 from data_exploration.boundary_looking import make_lda_plot
 from scikit_runs.bag_unknown import train_bag_with_unknown, validate_bag_with_unknown
@@ -40,6 +40,10 @@ def scikit_tree(label_type: Literal["detailed", "general"]):
     validate_random_tree(label_type)
 
 
+def token_flow(court_type: str):
+    prepare_tokens(court_type)
+
+
 if __name__ == "__main__":
     get_and_prepare_data('precinct')
     prepare_data('precinct')
@@ -48,3 +52,4 @@ if __name__ == "__main__":
     scikit_tf_idf('general')
     scikit_online('general')
     scikit_tree('general')
+    token_flow('precinct')
