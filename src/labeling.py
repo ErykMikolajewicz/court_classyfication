@@ -35,9 +35,9 @@ LABELS_REGEXES = {
 }
 
 
-def get_counter_label(counter_file_name: str, label_type: Literal["detailed", "general"]) -> str:
+def get_object_label(file_name: str, label_type: Literal["detailed", "general"]) -> str:
     for regex, label in LABELS_REGEXES.items():
-        regex_result = re.search(regex, counter_file_name)
+        regex_result = re.search(regex, file_name)
         if regex_result is not None:
             return label[label_type]
     else: # to ide do not complain about invalid type hints

@@ -5,7 +5,9 @@ from collections import Counter
 from types import SimpleNamespace
 from typing import Literal
 
-from src.labeling import get_counter_label
+import numpy as np
+
+from src.labeling import get_object_label
 
 
 def _get_counter_object(counter_path: Path) -> Counter:
@@ -44,7 +46,7 @@ def get_cases_words_count(set_type: str, label_type: Literal["detailed", "genera
     for counter_path in counter_dir.iterdir():
         counter = _get_counter_object(counter_path)
         counter_file_name = counter_path.name
-        label = get_counter_label(counter_file_name, label_type)
+        label = get_object_label(counter_file_name, label_type)
         yield counter, label
 
 
@@ -52,3 +54,19 @@ def get_counters_number(set_type: str) -> int:
     counter_dir = Path('data') / 'counters' / set_type
     counters_number =  len(list(counter_dir.iterdir()))
     return counters_number
+
+
+def get_tokens_with_label(set_type: str, label_type: Literal["detailed", "general"]) -> (np.array, str):
+    tokens_dir = Path('data') / 'tokens' / set_type
+    for tokens_path in tokens_dir.iterdir():
+        with open(tokens_path, 'rb') as tokens_file:
+            tokens = pickle.load(tokens_file)
+        tokens_file_name = tokens_path.name
+        label = get_object_label(tokens_file_name, label_type)
+        yield tokens, label
+
+
+def get_tokens_arrays_number(set_type: str) -> int:
+    tokens_dir = Path('data') / 'tokens' / set_type
+    tokens_arrays_number =  len(list(tokens_dir.iterdir()))
+    return tokens_arrays_number

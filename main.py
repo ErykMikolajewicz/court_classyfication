@@ -9,6 +9,7 @@ from scikit_runs.bag_unknown import train_bag_with_unknown, validate_bag_with_un
 from scikit_runs.bag_tf_idf import train_tf_idf, validate_tf_idf
 from scikit_runs.online import online_training, online_validate
 from scikit_runs.tree_with_bag import train_random_tree, validate_random_tree
+from scikit_runs.tokens_run import train_tokens, validate_tokens
 
 
 def get_and_prepare_data(court_type: str):
@@ -44,6 +45,11 @@ def token_flow(court_type: str):
     prepare_tokens(court_type)
 
 
+def scikit_token(label_type: Literal["detailed", "general"]):
+    train_tokens(label_type)
+    validate_tokens(label_type)
+
+
 if __name__ == "__main__":
     get_and_prepare_data('precinct')
     prepare_data('precinct')
@@ -53,3 +59,4 @@ if __name__ == "__main__":
     scikit_online('general')
     scikit_tree('general')
     token_flow('precinct')
+    scikit_token('general')
