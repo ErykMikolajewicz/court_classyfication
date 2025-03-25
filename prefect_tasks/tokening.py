@@ -39,11 +39,11 @@ def create_tokens(court_type: str, appeal_name: str, court_name: str, fraction: 
         array = saving_info.array
         save_path = tokens_training_path / (label + '.pickle')
         with open(save_path, 'wb') as file:
-            pickle.dump(array, file)
+            pickle.dump(array, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     for saving_info in save_to_validation:
         label = saving_info.label
         array = saving_info.array
         save_path = tokens_validation_path / (label + '.pickle')
         with open(save_path, 'wb') as file:
-            pickle.dump(array, file)
+            pickle.dump(array, file, protocol=pickle.HIGHEST_PROTOCOL)

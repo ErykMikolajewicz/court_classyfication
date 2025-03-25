@@ -1,6 +1,7 @@
 """Functions to get raw case html from court site, and extract justification from them."""
 from pathlib import Path
 import re
+import gzip
 
 from prefect import task, get_run_logger
 from bs4 import BeautifulSoup
@@ -21,13 +22,13 @@ def get_raw_html_from_page(court_scraper: CourtScraper, court_type: str, appeal_
 
         case_html = court_scraper.get_case_html(case_identifier)
         case_dir = Path('data') / 'raw' / court_type / appeal_name / court_name
-        case_path = case_dir / case_identifier
+        case_path = case_dir / (case_identifier + '.gz')
         try:
-            with open(case_path, 'w', encoding='utf-8') as case_file:
+            with gzip.open(case_path, 'wb', encoding='utf-8') as case_file:
                 case_file.write(case_html)
         except FileNotFoundError:
             case_dir.mkdir(parents=True)
-            with open(case_path, 'w', encoding='utf-8') as case_file:
+            with gzip.open(case_path, 'wb', encoding='utf-8') as case_file:
                 case_file.write(case_html)
 
 @task
@@ -59,7 +60,7 @@ def get_justification(court_type, appeal_name, court_name):
     justification_warning_counter = 0
     for raw_case_path in raw_html_path.iterdir():
 
-        with open(raw_case_path, 'r', encoding='utf-8') as raw_html_file:
+        with gzip.open(raw_case_path, 'rb') as raw_html_file:
             case_html = raw_html_file.read()
         case_identifier = raw_case_path.name
 
@@ -85,9 +86,9 @@ def get_justification(court_type, appeal_name, court_name):
 
         case_justification_path = case_justification_dir / case_identifier
         try:
-            with open(case_justification_path, 'w', encoding='utf-8') as raw_case_file:
-                raw_case_file.write(justification_text)
+            with gzip.open(case_justification_path, 'wb') as raw_case_file:
+                raw_case_file.write(justification_text.encode())
         except FileNotFoundError:
             case_justification_dir.mkdir(parents=True)
-            with open(case_justification_path, 'w', encoding='utf-8') as raw_case_file:
-                raw_case_file.write(justification_text)
+            with gzip.open(case_justification_path, 'wb') as raw_case_file:
+                raw_case_file.write(justification_text.encode())

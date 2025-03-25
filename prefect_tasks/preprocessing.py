@@ -2,6 +2,7 @@
 from pathlib import Path
 from collections import Counter
 import pickle
+import gzip
 
 from prefect import task
 
@@ -20,7 +21,9 @@ def make_word_counts(court_type: str, appeal_name: str, court_name: str):
     counter_particular_dir = counter_base_path / court_type / appeal_name / court_name
 
     for file_path in justification_particular_dir.iterdir():
-        text = file_path.read_text()
+        with gzip.open(file_path, 'rb') as justification_file:
+            text = justification_file.read()
+        text = text.decode()
         text = text.lower()
 
         text = regex_preprocessing(text)
@@ -28,10 +31,12 @@ def make_word_counts(court_type: str, appeal_name: str, court_name: str):
         preprocessed_path = preprocessing_particular_dir / file_path.name
 
         try:
-            preprocessed_path.write_text(text)
+            with gzip.open(preprocessed_path, 'wb') as preprocessed_file:
+                preprocessed_file.write(text.encode())
         except FileNotFoundError:
             preprocessing_particular_dir.mkdir(parents=True)
-            preprocessed_path.write_text(text)
+            with gzip.open(preprocessed_path, 'wb') as preprocessed_file:
+                preprocessed_file.write(text.encode())
 
         split_words = text.split()
         split_words = remove_stopwords_before_stemming(split_words)
@@ -43,8 +48,8 @@ def make_word_counts(court_type: str, appeal_name: str, court_name: str):
         counter_storing_path = counter_particular_dir / f'{file_path.name}.pickle'
         try:
             with open(counter_storing_path, 'wb') as storage_file:
-                pickle.dump(word_count, storage_file)
+                pickle.dump(word_count, storage_file, protocol=pickle.HIGHEST_PROTOCOL)
         except FileNotFoundError:
             counter_particular_dir.mkdir(parents=True)
             with open(counter_storing_path, 'wb') as storage_file:
-                pickle.dump(word_count, storage_file)
+                pickle.dump(word_count, storage_file, protocol=pickle.HIGHEST_PROTOCOL)

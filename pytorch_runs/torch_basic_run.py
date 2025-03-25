@@ -65,11 +65,11 @@ def torch_train_bag_with_unknown(label_type: Literal["detailed", "general"]):
         loss_hist_train[epoch] += loss.item()
         train_accuracy[epoch] = compute_accuracy(prediction)
 
-
+    print(train_accuracy[-1])
 
     plt.plot(range(num_epochs), loss_hist_train)
     plt.plot(range(num_epochs), train_accuracy)
-    plt.xlim(0, 1)
-    plt.ylim(0, 2000)
+    plt.xlim(0, 2_000)
+    plt.ylim(0, 1)
     plt.show()
 
