@@ -10,6 +10,7 @@ from scikit_runs.bag_tf_idf import train_tf_idf, validate_tf_idf
 from scikit_runs.online import online_training, online_validate
 from scikit_runs.tree_with_bag import train_random_tree, validate_random_tree
 from scikit_runs.tokens_run import train_tokens, validate_tokens
+from pytorch_runs.torch_basic_run import torch_train_bag_with_unknown
 
 
 def get_and_prepare_data(court_type: str):
@@ -20,6 +21,7 @@ def get_and_prepare_data(court_type: str):
 def explore_data(court_type: str, label_type: Literal["detailed", "general"]):
     plot_classes_chart(court_type, label_type)
     make_lda_plot(12_000, label_type)
+
 
 def scikit_bag_with_unknown(label_type: Literal["detailed", "general"]):
     train_bag_with_unknown(label_type)
@@ -50,13 +52,17 @@ def scikit_token(label_type: Literal["detailed", "general"]):
     validate_tokens(label_type)
 
 
+def pytorch_run(label_type: Literal["detailed", "general"]):
+    torch_train_bag_with_unknown(label_type)
+
 if __name__ == "__main__":
-    get_and_prepare_data('precinct')
-    prepare_data('precinct')
-    explore_data('precinct', 'general')
-    scikit_bag_with_unknown('general')
-    scikit_tf_idf('general')
-    scikit_online('general')
-    scikit_tree('general')
-    token_flow('precinct')
-    scikit_token('general')
+    # get_and_prepare_data('precinct')
+    # prepare_data('precinct')
+    # explore_data('precinct', 'general')
+    # scikit_bag_with_unknown('general')
+    # scikit_tf_idf('general')
+    # scikit_online('general')
+    # scikit_tree('general')
+    # token_flow('precinct')
+    # scikit_token('general')
+    pytorch_run('general')

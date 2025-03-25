@@ -6,7 +6,7 @@ from src.texts_corps import get_cases_words_count, get_counters_number, get_toke
 
 
 def get_bag_unknown(vocabulary: dict, set_type: str, label_type: Literal["detailed", "general"],
-                    max_size=None) -> (np.ndarray, np.ndarray):
+                    max_size=None, type_=np.int32) -> (np.ndarray, np.ndarray):
     vocabulary_length = len(vocabulary)
     counters_number = get_counters_number(set_type)
 
@@ -14,7 +14,7 @@ def get_bag_unknown(vocabulary: dict, set_type: str, label_type: Literal["detail
         data_length = max_size
     else:
         data_length = counters_number
-    features = np.zeros((data_length, vocabulary_length + 1), dtype=np.int32)
+    features = np.zeros((data_length, vocabulary_length + 1), dtype=type_)
     target = np.empty((data_length, 1), dtype=object)
 
     for row_index, (words_count, label) in enumerate(get_cases_words_count(set_type, label_type)):

@@ -10,7 +10,7 @@ from src.texts_corps import get_vocabulary
 from src.labeling import get_labels
 
 
-def make_lda_plot(batch_size: int, label_type: Literal["detailed", "general"]):
+def make_lda_plot(batch_size: int | None, label_type: Literal["detailed", "general"]):
     labels_names = get_labels(label_type)
 
     vocabulary = get_vocabulary()
@@ -18,14 +18,13 @@ def make_lda_plot(batch_size: int, label_type: Literal["detailed", "general"]):
     labels = labels.ravel()
 
     lda = LinearDiscriminantAnalysis(n_components=2)
-
     reduced_features = lda.fit_transform(words_counts, labels)
 
     n = len(labels_names)
     name='hsv'
     cmap = plt.get_cmap(name, n)
 
-    markers = [".","o","v","^","<",">","1","2","3","4","8","s","p","P","*","h","H","+","x","X","D","d","|","_"]
+    markers = [".","o","v","^","<",">","1","2","3","4","8","s","p","P","*","h","H","+","x","X","D","d","|","_", 1, 2, 3, 4, 5, 6, 7]
     shuffle(markers)
 
     for i, l in enumerate(labels_names):
