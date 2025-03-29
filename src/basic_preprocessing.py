@@ -64,4 +64,3 @@ def stem_words(words: list[str]) -> list[str]:
             return stemmed_words
         case _:
             raise ValueError('Invalid stemmer type!')
-

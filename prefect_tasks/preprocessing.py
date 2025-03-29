@@ -1,9 +1,11 @@
 """Function for basic preprocessing - remove non letter chars, and make stemming, also make words counts."""
 from pathlib import Path
-from collections import Counter
 import pickle
 import gzip
+import json
+from collections import Counter
 
+import xattr
 from prefect import task
 
 from src.basic_preprocessing import (regex_preprocessing, remove_stopwords_before_stemming,
@@ -11,14 +13,13 @@ from src.basic_preprocessing import (regex_preprocessing, remove_stopwords_befor
 
 
 @task
-def make_word_counts(court_type: str, appeal_name: str, court_name: str):
+def make_words_counts(court_type: str, appeal: str, court_name: str):
     justification_base_path = Path('data') / 'justification'
     preprocessing_base_path = Path('data') / 'preprocessed'
-    counter_base_path =  Path('data') / 'counters'
+    counters_path =  Path('data') / 'counters'
 
-    justification_particular_dir = justification_base_path / court_type / appeal_name / court_name
-    preprocessing_particular_dir = preprocessing_base_path / court_type / appeal_name / court_name
-    counter_particular_dir = counter_base_path / court_type / appeal_name / court_name
+    justification_particular_dir = justification_base_path / court_type / appeal / court_name
+    preprocessing_particular_dir = preprocessing_base_path / court_type / appeal / court_name
 
     for file_path in justification_particular_dir.iterdir():
         with gzip.open(file_path, 'rb') as justification_file:
@@ -45,11 +46,9 @@ def make_word_counts(court_type: str, appeal_name: str, court_name: str):
 
         word_count = Counter(stemmed_words)
 
-        counter_storing_path = counter_particular_dir / f'{file_path.name}.pickle'
-        try:
-            with open(counter_storing_path, 'wb') as storage_file:
-                pickle.dump(word_count, storage_file, protocol=pickle.HIGHEST_PROTOCOL)
-        except FileNotFoundError:
-            counter_particular_dir.mkdir(parents=True)
-            with open(counter_storing_path, 'wb') as storage_file:
-                pickle.dump(word_count, storage_file, protocol=pickle.HIGHEST_PROTOCOL)
+        counter_storing_path = counters_path / f'{file_path.stem}.pickle'
+        attributes = {'court_type': court_type, 'appeal': appeal, 'court_name': court_name}
+        attributes = json.dumps(attributes)
+        with open(counter_storing_path, 'wb') as storage_file:
+            pickle.dump(word_count, storage_file, protocol=pickle.HIGHEST_PROTOCOL)
+            xattr.setxattr(storage_file, 'user.attributes', attributes.encode())

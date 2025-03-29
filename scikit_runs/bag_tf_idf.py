@@ -12,6 +12,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
 
 from src.texts_corps import get_vocabulary
 from src.ml_preparing import get_bag_unknown
@@ -20,15 +21,19 @@ from src.labeling import get_labels
 
 def train_tf_idf(label_type: Literal["detailed", "general"]):
     vocabulary = get_vocabulary()
-    training_features, training_target = get_bag_unknown(vocabulary, 'training', label_type)
-    training_features = sparse.csr_matrix(training_features, dtype=np.float64)
+
+    features, target = get_bag_unknown(vocabulary, label_type, max_size=1000)
+    features = sparse.csr_matrix(features, dtype=np.int32)
 
     tf_idf = TfidfTransformer(use_idf=True, norm='l2')
-    training_features = tf_idf.fit_transform(training_features)
+    features = tf_idf.fit_transform(features)
 
     labels = get_labels(label_type)
     encoder = OneHotEncoder(categories=[labels], dtype=np.int32)
-    training_target = encoder.fit_transform(training_target)
+    target = encoder.fit_transform(target)
+
+    training_features, validation_features, training_target, validation_target = train_test_split(
+        features, target, test_size=0.2, random_state=42)
 
     clf = MLPClassifier(random_state=42)
 
@@ -46,22 +51,6 @@ def train_tf_idf(label_type: Literal["detailed", "general"]):
     trained_model = clf.fit(training_features, training_target)
     with open('py_objects/sklearn_model.pickle', 'wb') as model_file:
         pickle.dump(trained_model, model_file)
-
-
-def validate_tf_idf(label_type: Literal["detailed", "general"]):
-    vocabulary = get_vocabulary()
-    tfidf = TfidfTransformer(use_idf=True, norm='l2', smooth_idf=True)
-
-    with open('py_objects/sklearn_model.pickle', 'rb') as model_file:
-        clf = pickle.load(model_file)
-
-    validation_features, validation_target = get_bag_unknown(vocabulary, 'validation', label_type)
-
-    validation_features = tfidf.fit_transform(validation_features)
-
-    labels = get_labels(label_type)
-    encoder = OneHotEncoder(categories=[labels], dtype=np.int32)
-    validation_target = encoder.fit_transform(validation_target)
 
     validation_predict = clf.predict(validation_features)
     print(accuracy_score(validation_target, validation_predict))
