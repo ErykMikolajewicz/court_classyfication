@@ -11,7 +11,7 @@ from prefect.cache_policies import NO_CACHE
 from src.scraping import CourtScraper
 
 
-@task(retries=3, retry_delay_seconds=exponential_backoff(10), cache_policy=NO_CACHE)
+@task(retries=5, retry_delay_seconds=exponential_backoff(10), cache_policy=NO_CACHE)
 def get_raw_html_from_page(court_scraper: CourtScraper, court_type: str, appeal_name: str, court_name: str,
                            page_number: int):
     case_links = court_scraper.get_links_from_page(page_number)
@@ -24,12 +24,13 @@ def get_raw_html_from_page(court_scraper: CourtScraper, court_type: str, appeal_
         case_dir = Path('data') / 'raw' / court_type / appeal_name / court_name
         case_path = case_dir / (case_identifier + '.gz')
         try:
-            with gzip.open(case_path, 'wb', encoding='utf-8') as case_file:
-                case_file.write(case_html)
+            with gzip.open(case_path, 'wb') as case_file:
+                case_file.write(case_html.encode())
         except FileNotFoundError:
             case_dir.mkdir(parents=True)
-            with gzip.open(case_path, 'wb', encoding='utf-8') as case_file:
-                case_file.write(case_html)
+            with gzip.open(case_path, 'wb') as case_file:
+                case_file.write(case_html.encode())
+
 
 @task
 def get_raw_html_from_court(court_config):
@@ -42,7 +43,10 @@ def get_raw_html_from_court(court_config):
 
     court_scraper = CourtScraper(url)
     pages_number = court_scraper.get_pages_number()
-    for page_number in range(1, pages_number + 1):
+    html_saving_dir = Path('data') / 'raw' / court_type / appeal / court_name
+    downloaded_html_number = len(list(html_saving_dir.iterdir()))
+    base_page_number = (downloaded_html_number // 10) + 1
+    for page_number in range(base_page_number, pages_number + 1):
         prefect_logger.info(f'Page: {page_number}/{pages_number}')
         get_raw_html_from_page(court_scraper, court_type, appeal, court_name, page_number)
 
