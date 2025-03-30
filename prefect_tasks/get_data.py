@@ -52,11 +52,11 @@ def get_raw_html_from_court(court_config):
 
 
 @task
-def get_justification(court_type, appeal_name, court_name):
+def get_justification(court_type, appeal, court_name):
     prefect_logger = get_run_logger()
 
-    raw_html_path = Path('data') / 'raw' / court_type / appeal_name / court_name
-    case_justification_dir = Path('data') / 'justification' / court_type / appeal_name / court_name
+    raw_html_path = Path('data') / 'raw' / court_type / appeal / court_name
+    case_justification_dir = Path('data') / 'justification' / court_type / appeal / court_name
 
     if not raw_html_path.exists(): # Occur when is no cases in court page, sometimes happen in regional courts
         return None

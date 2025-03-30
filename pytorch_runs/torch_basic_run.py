@@ -18,8 +18,7 @@ torch.manual_seed(42)
 def torch_train_bag_with_unknown(label_type: Literal["detailed", "general"]):
     vocabulary = get_vocabulary()
 
-    training_features, training_target = get_bag_unknown(vocabulary, 'training', label_type, max_size=12_000,
-                                                         type_=np.float32)
+    training_features, training_target = get_bag_unknown(vocabulary, label_type, max_size=12_000, type_=np.float32)
 
     labels = get_labels(label_type)
     encoder = OneHotEncoder(categories=[labels], dtype=np.float32, sparse_output=False)

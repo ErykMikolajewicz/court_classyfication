@@ -12,7 +12,7 @@ from pytorch_runs.torch_basic_run import torch_train_bag_with_unknown
 
 
 def get_and_prepare_data(court_type: str):
-    get_all_raw_html(court_type)
+    #get_all_raw_html(court_type)
     prepare_data(court_type)
 
 
@@ -33,8 +33,8 @@ def pytorch_run(label_type: Literal["detailed", "general"]):
     torch_train_bag_with_unknown(label_type)
 
 if __name__ == "__main__":
-    get_and_prepare_data('precinct')
-    explore_data('precinct', 'general')
-    scikit_bag_with_unknown('general')
-    scikit_tf_idf('general')
+    # get_and_prepare_data('precinct')
+    # explore_data('precinct', 'general')
+    # scikit_bag_with_unknown('general')
+    # scikit_tf_idf('general')
     pytorch_run('general')

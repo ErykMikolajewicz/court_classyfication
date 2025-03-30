@@ -5,7 +5,7 @@ from prefect.task_runners import ThreadPoolTaskRunner
 from prefect_ray import RayTaskRunner
 
 from prefect_tasks.get_data import get_raw_html_from_court, get_justification
-from prefect_tasks.preprocessing import make_words_counts
+from prefect_tasks.preprocessing import make_words_counts, preprocessed_justification
 
 
 @flow(task_runner=ThreadPoolTaskRunner(max_workers=10))
@@ -29,8 +29,10 @@ def prepare_data(court_type: str):
     courts_list = json.loads(courts_list)
 
     courts_one_type = courts_list[court_type]
+    preprocessings = []
     words_count = []
     preparations = []
+    preprocessing_args = {}
     word_counts_args = {}
     for court in courts_one_type:
         appeal = court['appeal']
@@ -38,15 +40,24 @@ def prepare_data(court_type: str):
 
         preparation = get_justification.submit(court_type, appeal, court_name)
         task_id = preparation.task_run_id
-        word_counts_args[task_id] = (court_type, appeal, court_name)
+        preprocessing_args[task_id] = (court_type, appeal, court_name)
         preparations.append(preparation)
 
     for preparation in preparations:
         preparation_id = preparation.task_run_id
         preparation.wait()
-        next_args = word_counts_args[preparation_id]
-        word_count = make_words_counts.submit(*next_args)
-        words_count.append(word_count)
+        next_args = preprocessing_args[preparation_id]
+        preprocessing = preprocessed_justification.submit(*next_args)
+        preprocessing_id = preprocessing.task_run_id
+        word_counts_args[preprocessing_id] = next_args
+        preprocessings.append(preprocessing)
+
+    for preprocessing in preprocessings:
+        preprocessing_id = preprocessing.task_run_id
+        preprocessing.wait()
+        next_args = word_counts_args[preprocessing_id]
+        preprocessing = make_words_counts.submit(*next_args)
+        words_count.append(preprocessing)
 
     for word_count in words_count:
         word_count.wait()
