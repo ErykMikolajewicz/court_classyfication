@@ -14,7 +14,7 @@ def make_lda_plot(batch_size: int | None, label_type: Literal["detailed", "gener
     labels_names = get_labels(label_type)
 
     vocabulary = get_vocabulary()
-    words_counts, labels = get_bag_unknown(vocabulary, 'training', label_type, max_size=batch_size)
+    words_counts, labels = get_bag_unknown(vocabulary, label_type, max_size=batch_size)
     labels = labels.ravel()
 
     lda = LinearDiscriminantAnalysis(n_components=2)
