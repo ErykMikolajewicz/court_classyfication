@@ -30,11 +30,11 @@ def scikit_tf_idf(label_type: Literal["detailed", "general"]):
 
 
 def pytorch_run(label_type: Literal["detailed", "general"]):
-    torch_train_bag_with_unknown(label_type, batch_size=200)
+    torch_train_bag_with_unknown(label_type, batch_size=512, max_size=80_000)
 
 if __name__ == "__main__":
     # get_and_prepare_data('precinct')
     # explore_data('precinct', 'general')
     # scikit_bag_with_unknown('general')
     # scikit_tf_idf('general')
-    pytorch_run('general')
+    pytorch_run('detailed')
