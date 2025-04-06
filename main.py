@@ -8,7 +8,7 @@ from data_exploration.classes_counting import plot_classes_chart
 from data_exploration.boundary_looking import make_lda_plot
 from scikit_runs.bag_unknown import bag_with_unknown
 from scikit_runs.bag_tf_idf import train_tf_idf
-from pytorch_runs.torch_basic_run import torch_train_bag_with_unknown
+from pytorch_runs.torch_basic_run import BagTrainer
 
 
 def get_and_prepare_data(court_type: str):
@@ -30,7 +30,10 @@ def scikit_tf_idf(label_type: Literal["detailed", "general"]):
 
 
 def pytorch_run(label_type: Literal['detailed', 'general', 'appeal']):
-    torch_train_bag_with_unknown(label_type, batch_size=512, max_size=70_000)
+    trainer = BagTrainer()
+    trainer.prepare_data(label_type=label_type, batch_size=256, max_size=70_000)
+    trainer.train(num_epochs=50)
+    trainer.plot_metrics()
 
 if __name__ == "__main__":
     # get_and_prepare_data('precinct')

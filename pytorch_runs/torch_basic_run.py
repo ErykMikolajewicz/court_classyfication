@@ -16,160 +16,163 @@ from src.labeling import get_labels
 torch.manual_seed(42)
 
 
-def torch_train_bag_with_unknown(label_type: Literal['detailed', 'general', 'appeal'],
-                                 batch_size: Optional[int] = None,
-                                 max_size: Optional[int] = None):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+class BagTrainer:
+    def __init__(self):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.vocabulary = get_vocabulary(document_frequency_threshold=50)
+        self.vocabulary_size = len(self.vocabulary)
 
-    vocabulary = get_vocabulary(document_frequency_threshold=50)
-    print(len(vocabulary))
-    training_features, training_target = get_bag_unknown(vocabulary, label_type, max_size=max_size, type_=np.float32)
+        self.model = None
+        self.optimizer = None
+        self.loss_function = None
+        self.__training_loader = None
+        self.__validation_loader = None
+        self.labels = None
+        self.__accuracy_metric = None
+        self.train_loss_hist = []
+        self.train_accuracy_hist = []
+        self.val_loss_hist = []
+        self.val_accuracy_hist = []
 
-    labels = get_labels(label_type)
-    labels_indexes = {label: index for index, label in enumerate(labels)}
-    training_target = np.array([labels_indexes[label.item()] for label in training_target], dtype=np.int64)
+    def prepare_data(self,
+                     label_type: Literal['detailed', 'general', 'appeal'],
+                     max_size: Optional[int] = None,
+                     batch_size: Optional[int] = None):
+        features, targets = get_bag_unknown(self.vocabulary, label_type, max_size=max_size, type_=np.float32)
+        self.labels = get_labels(label_type)
+        self.__accuracy_metric = Accuracy(task='multiclass', num_classes=len(self.labels)).to(self.device)
+        label_to_index = {label: i for i, label in enumerate(self.labels)}
+        targets = np.array([label_to_index[label.item()] for label in targets], dtype=np.int64)
 
-    training_features, validation_features, training_target, validation_target = train_test_split(
-        training_features,
-        training_target,
-        test_size=0.3,
-        random_state=42,
-        stratify=training_target
-    )
+        training_features, validation_features, training_target, validation_target = train_test_split(
+            features, targets, test_size=0.3, random_state=42, stratify=targets)
 
-    input_parameters = training_features.shape[1]
-    output_parameters = len(labels)
+        training_features, validation_features = map(torch.from_numpy, [training_features, validation_features])
+        training_target, validation_target = map(torch.from_numpy, [training_target, validation_target])
 
-    training_features = torch.from_numpy(training_features)
-    training_target = torch.from_numpy(training_target)
+        train_dataset = torch.utils.data.TensorDataset(training_features, training_target)
+        val_dataset = torch.utils.data.TensorDataset(validation_features, validation_target)
 
-    training_dataset = torch.utils.data.TensorDataset(training_features, training_target)
+        if batch_size is None:
+            batch_size = len(train_dataset)
+            shuffle = False
+        else:
+            shuffle = True
 
-    validation_features = torch.from_numpy(validation_features)
-    validation_target = torch.from_numpy(validation_target)
-    validation_dataset = torch.utils.data.TensorDataset(validation_features, validation_target)
+        num_workers = os.cpu_count()
+        self.__training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, pin_memory=True,
+                                                             shuffle=shuffle, num_workers=num_workers)
+        self.__validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=2048, pin_memory=True,
+                                                               num_workers=num_workers)
 
-    if batch_size is None:
-        batch_size = len(training_features)
-        shuffle = False
-    else:
-        shuffle = True
+    def train(self,
+              num_epochs: int = 100,
+              l1_lambda: float = 0.001,
+              initial_lr: float = 0.01):
+        self.train_loss_hist = []
+        self.train_accuracy_hist = []
+        self.val_loss_hist = []
+        self.val_accuracy_hist = []
 
-    cpu_number = os.cpu_count()
-    training_dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=batch_size,
-                                                      shuffle=shuffle, num_workers=cpu_number)
+        cross_entropy_loss = nn.CrossEntropyLoss()
+        def loss_function(outputs, targets):
+            l1_norm = sum(param.abs().sum() for param in self.model.parameters())
+            return cross_entropy_loss(outputs, targets) + l1_lambda * l1_norm
+        self.loss_function = loss_function
 
-    validation_dataloader = torch.utils.data.DataLoader(validation_dataset, batch_size=batch_size,
-                                                      shuffle=shuffle, num_workers=cpu_number)
+        input_dim = self.vocabulary_size + 1 # + 1 is for unknown tokens
+        output_dim = len(self.labels)
 
-    model = nn.Sequential(
-        nn.Linear(input_parameters, 20),
-        nn.BatchNorm1d(20),
-        nn.ReLU(),
-        nn.Linear(20, 20),
-        nn.ReLU(),
-        nn.Linear(20, output_parameters)
-    ).to(device)
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, 20),
+            nn.BatchNorm1d(20),
+            nn.ReLU(),
+            nn.Linear(20, 20),
+            nn.ReLU(),
+            nn.Linear(20, output_dim)
+        ).to(self.device)
 
-    optimizer = torch.optim.Adagrad(model.parameters(), lr=0.01)
-    loss_function = nn.CrossEntropyLoss()
-    l1_lambda = 0.001
+        self.optimizer = torch.optim.Adagrad(self.model.parameters(), lr=initial_lr)
 
-    accuracy = Accuracy(task='multiclass', num_classes=len(labels)).to(device)
+        for epoch in range(num_epochs):
+            self.model.train()
+            epoch_loss, batch_counter = 0, 0
 
-    num_epochs = 100
+            for features, targets in self.__training_loader:
+                features, targets = features.to(self.device), targets.to(self.device)
+                outputs = self.model(features)
+                loss = self.loss_function(outputs, targets)
 
-    loss_hist_train = [0] * num_epochs
-    train_accuracy = [0] * num_epochs
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
-    val_accuracy = [0] * num_epochs
-    val_loss_hist = [0] * num_epochs
+                epoch_loss += loss.item()
+                predictions = torch.argmax(outputs, dim=1)
+                self.__accuracy_metric.update(predictions, targets)
+                batch_counter += 1
 
-    for epoch in range(num_epochs):
-        model.train()
+            self.train_loss_hist.append(epoch_loss / batch_counter)
+            self.train_accuracy_hist.append(self.__accuracy_metric.compute().item())
+            self.__accuracy_metric.reset()
 
-        epoch_loss = 0
-        batches_per_epoch = 0
+            val_loss = self.evaluate()
 
-        for t_batch_features, t_batch_targets in training_dataloader:
-            batch_features, batch_targets = t_batch_features.to(device), t_batch_targets.to(device)
-            prediction = model(batch_features)
+            if epoch % 5 == 0:
+                print(f"Epoch {epoch} | Train Loss: {self.train_loss_hist[-1]:.4f} | "
+                      f"Train Acc: {self.train_accuracy_hist[-1]:.4f} | "
+                      f"Val Loss: {val_loss:.4f} | Val Acc: {self.val_accuracy_hist[-1]:.4f}")
 
-            loss = loss_function(prediction, batch_targets)
-
-            l1_norm = sum(param.abs().sum() for param in model.parameters())
-            loss = loss + l1_lambda * l1_norm
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            epoch_loss += loss.item()
-
-            prediction_indexes = torch.argmax(prediction, dim=1)
-            accuracy.update(prediction_indexes, batch_targets)
-            batches_per_epoch += 1
-
-        loss_hist_train[epoch] = epoch_loss / batches_per_epoch
-        train_accuracy[epoch] = accuracy.compute().item()
-        accuracy.reset()
-
-        model.eval()
-        validation_loss = 0
-        validation_batches = 0
+    def evaluate(self):
+        self.model.eval()
+        batches_loss, batch_number = 0, 0
 
         with torch.no_grad():
-            for batch_features, batch_targets in validation_dataloader:
-                batch_features, batch_targets = batch_features.to(device), batch_targets.to(device)
-                batch_predictions = model(batch_features)
+            for features, targets in self.__validation_loader:
+                features, targets = features.to(self.device), targets.to(self.device)
+                outputs = self.model(features)
 
-                loss = loss_function(batch_predictions, batch_targets)
-                validation_loss += loss.item()
-                validation_batches += 1
+                loss = self.loss_function(outputs, targets)
+                batches_loss += loss.item()
+                batch_number += 1
 
-                predictions_indexes = torch.argmax(batch_predictions, dim=1)
-                accuracy.update(predictions_indexes, batch_targets)
+                predictions = torch.argmax(outputs, dim=1)
+                self.__accuracy_metric.update(predictions, targets)
 
-        val_loss_hist[epoch] = validation_loss / validation_batches
-        val_accuracy[epoch] = accuracy.compute().item()
-        accuracy.reset()
+        validation_loss = batches_loss / batch_number
+        self.val_loss_hist.append(validation_loss)
+        self.val_accuracy_hist.append(self.__accuracy_metric.compute().item())
+        self.__accuracy_metric.reset()
+        return validation_loss
 
-        if epoch % 5 == 0:
-            print(f"Epoch {epoch} | Train Loss: {loss_hist_train[epoch]:.4f} | Train Acc: {train_accuracy[epoch]:.4f}"
-                  f" | Val Loss: {val_loss_hist[epoch]:.4f} | Val Acc: {val_accuracy[epoch]:.4f}")
+    def plot_metrics(self):
 
-    print(f"Final training accuracy: {train_accuracy[-1]:.4f}")
+        plt.figure(figsize=(10, 5))
+        plt.subplot(2, 2, 1)
+        plt.plot(range(len(self.train_loss_hist)), self.train_loss_hist)
+        plt.title('Training Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
 
-    plt.figure(figsize=(10, 5))
-    plt.subplot(2, 2, 1)
-    plt.plot(range(num_epochs), loss_hist_train)
-    plt.title('Training Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.xlim(0, num_epochs)
+        plt.subplot(2, 2, 2)
+        plt.plot(range(len(self.train_accuracy_hist)), self.train_accuracy_hist)
+        plt.title('Training Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.ylim(0, 1)
 
-    plt.subplot(2, 2, 2)
-    plt.plot(range(num_epochs), train_accuracy)
-    plt.title('Training Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.xlim(0, num_epochs)
-    plt.ylim(0, 1)
+        plt.subplot(2, 2, 3)
+        plt.plot(range(len(self.val_loss_hist)), self.val_loss_hist)
+        plt.title('Validation Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
 
-    plt.subplot(2, 2, 3)
-    plt.plot(range(num_epochs), val_loss_hist)
-    plt.title('Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.xlim(0, num_epochs)
+        plt.subplot(2, 2, 4)
+        plt.plot(range(len(self.val_accuracy_hist)), self.val_accuracy_hist)
+        plt.title('Validation Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.ylim(0, 1)
 
-    plt.subplot(2, 2, 4)
-    plt.plot(range(num_epochs), val_accuracy)
-    plt.title('Validation Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.xlim(0, num_epochs)
-    plt.ylim(0, 1)
-
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
