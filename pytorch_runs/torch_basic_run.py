@@ -16,12 +16,13 @@ from src.labeling import get_labels
 torch.manual_seed(42)
 
 
-def torch_train_bag_with_unknown(label_type: Literal["detailed", "general"],
+def torch_train_bag_with_unknown(label_type: Literal['detailed', 'general', 'appeal'],
                                  batch_size: Optional[int] = None,
                                  max_size: Optional[int] = None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    vocabulary = get_vocabulary()
+    vocabulary = get_vocabulary(document_frequency_threshold=50)
+    print(len(vocabulary))
     training_features, training_target = get_bag_unknown(vocabulary, label_type, max_size=max_size, type_=np.float32)
 
     labels = get_labels(label_type)
@@ -119,7 +120,7 @@ def torch_train_bag_with_unknown(label_type: Literal["detailed", "general"],
 
         with torch.no_grad():
             for batch_features, batch_targets in validation_dataloader:
-                batch_features, v_batch_targets = batch_features.to(device), batch_targets.to(device)
+                batch_features, batch_targets = batch_features.to(device), batch_targets.to(device)
                 batch_predictions = model(batch_features)
 
                 loss = loss_function(batch_predictions, batch_targets)

@@ -5,8 +5,8 @@ import numpy as np
 from src.texts_corps import get_cases_words_count, get_counters_number
 
 
-def get_bag_unknown(vocabulary: dict, label_type: Literal["detailed", "general"], max_size=None, type_=np.int32)\
-        -> (np.ndarray, np.ndarray):
+def get_bag_unknown(vocabulary: dict, label_type: Literal['detailed', 'general', 'appeal'], max_size=None,
+                    type_=np.int32) -> (np.ndarray, np.ndarray):
     vocabulary_length = len(vocabulary)
     counters_number = get_counters_number()
 

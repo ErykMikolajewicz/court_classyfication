@@ -1,5 +1,9 @@
 import re
 from typing import Literal
+from pathlib import Path
+import json
+
+import xattr
 
 
 LABELS_REGEXES = {
@@ -35,14 +39,40 @@ LABELS_REGEXES = {
 }
 
 
-def get_object_label(file_name: str, label_type: Literal["detailed", "general"]) -> str:
-    for regex, label in LABELS_REGEXES.items():
-        regex_result = re.search(regex, file_name)
-        if regex_result is not None:
-            return label[label_type]
-    else: # to ide do not complain about invalid type hints
-        raise  ValueError
+counters_dir = Path('data') / 'counters'
+def get_counter_label(file_name: str, label_type: Literal['detailed', 'general', 'appeal']) -> str:
+    if label_type in ('detailed', 'general'):
+        for regex, label in LABELS_REGEXES.items():
+            regex_result = re.search(regex, file_name)
+            if regex_result is not None:
+                return label[label_type]
+        else: # to ide do not complain about invalid type hints
+            raise  ValueError
+    elif label_type == 'appeal':
+        counter_path = counters_dir / file_name
+        attributes = xattr.getxattr(counter_path, attr='user.attributes')
+        attributes = json.loads(attributes)
+        return attributes[label_type]
+    else:
+        raise ValueError
 
+appeals = [ "wroclawska",
+"katowicka",
+"krakowska",
+"rzeszowska",
+"poznanska",
+"lodzka",
+"lubelska",
+"warszawska",
+"szczecinska",
+"gdanska",
+"bialostocka"
+]
 
-def get_labels(label_type: Literal["detailed", "general"]) -> list:
-    return list({label[label_type] for label in LABELS_REGEXES.values()})
+def get_labels(label_type: Literal['detailed', 'general', 'appeal']) -> list:
+    if label_type in ('detailed', 'general'):
+        return list({label[label_type] for label in LABELS_REGEXES.values()})
+    elif label_type == 'appeal':
+        return appeals
+    else:
+        raise ValueError

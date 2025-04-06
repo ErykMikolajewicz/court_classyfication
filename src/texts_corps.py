@@ -5,7 +5,7 @@ from collections import Counter
 from types import SimpleNamespace
 from typing import Literal
 
-from src.labeling import get_object_label
+from src.labeling import get_counter_label
 
 
 def get_vocabulary(fraction: float = 0.8, document_frequency_threshold: int = 5) -> dict[str, SimpleNamespace]:
@@ -34,13 +34,13 @@ def get_vocabulary(fraction: float = 0.8, document_frequency_threshold: int = 5)
     return vocabulary
 
 
-def get_cases_words_count(label_type: Literal["detailed", "general"]) -> (Counter, str):
+def get_cases_words_count(label_type: Literal['detailed', 'general', 'appeal']) -> (Counter, str):
     counter_dir = Path('data') / 'counters'
     for counter_path in counter_dir.iterdir():
         with open(counter_path, 'rb') as counter_file:
             counter = pickle.load(counter_file)
         counter_file_name = counter_path.name
-        label = get_object_label(counter_file_name, label_type)
+        label = get_counter_label(counter_file_name, label_type)
         yield counter, label
 
 
